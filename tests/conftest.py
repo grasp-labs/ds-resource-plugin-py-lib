@@ -9,7 +9,6 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-import yaml
 
 from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset
 from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService
@@ -119,11 +118,3 @@ def mock_linked_service_class():
     mock_instance = Mock(spec=LinkedService)
     mock_cls.deserialize = Mock(return_value=mock_instance)
     return mock_cls
-
-
-def create_resource_yaml_file(temp_dir, yaml_content):
-    """Helper function to create a resource.yaml file in temporary directory."""
-    resource_file = temp_dir / "resource.yaml"
-    with resource_file.open("w") as f:
-        yaml.dump(yaml_content, f)
-    return temp_dir

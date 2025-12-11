@@ -62,8 +62,8 @@ class ResourceClient(LoggingMixin):
         """
         try:
             eps = entry_points(group=group)
-        except Exception as e:
-            self.log.warning(f"Failed to read entry points for {group}: {e}")
+        except Exception as exc:
+            self.log.warning(f"Failed to read entry points for {group}: {exc}")
             return
 
         for ep in eps:
@@ -77,8 +77,8 @@ class ResourceClient(LoggingMixin):
                 real_path = str(Path(module_path).parent.resolve())
                 self._scan_resource_directory(real_path)
 
-            except Exception as e:
-                self.log.error(f"Error when loading entry point {ep.name} ({group}): {e}")
+            except Exception as exc:
+                self.log.error(f"Error when loading entry point {ep.name} ({group}): {exc}")
 
     def _scan_resource_directory(self, resource_dir: str) -> None:
         """
@@ -118,8 +118,8 @@ class ResourceClient(LoggingMixin):
                 self._resource_dict[resource_name] = resource_config
                 self._parse_linked_services(resource_config)
                 self._parse_datasets(resource_config)
-        except Exception as e:
-            self.log.error(f"Error loading resource configuration from {resource_yaml}: {e}")
+        except Exception as exc:
+            self.log.error(f"Error loading resource configuration from {resource_yaml}: {exc}")
 
     def _parse_linked_services(self, config: dict[str, Any]) -> None:
         """
