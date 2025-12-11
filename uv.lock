@@ -492,11 +492,11 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "awswrangler", specifier = ">=3.11.0" },
+    { name = "awswrangler", specifier = ">=3.11.0,<4.0.0" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.0.0" },
-    { name = "ds-common-logger-py-lib", specifier = ">=0.1.3a0", index = "https://test.pypi.org/simple/" },
+    { name = "ds-common-logger-py-lib", specifier = ">=0.1.3a0,<1.0.0", index = "https://test.pypi.org/simple/" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
-    { name = "pandas", specifier = ">=2.1.0" },
+    { name = "pandas", specifier = ">=2.1.0,<3.0.0" },
     { name = "pandas-stubs", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
@@ -505,7 +505,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=4.1.0" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.3.0" },
     { name = "pytest-xdist", marker = "extra == 'test'", specifier = ">=3.3.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "pyyaml", specifier = ">=6.0.2,<7.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.8" },
     { name = "sphinx", marker = "extra == 'dev'", specifier = ">=7.1.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.1.0" },
@@ -515,7 +515,7 @@ requires-dist = [
     { name = "sphinx-material", marker = "extra == 'docs'", specifier = ">=0.0.35" },
     { name = "twine", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "typing-extensions", specifier = ">=4.0.0" },
+    { name = "typing-extensions", specifier = ">=4.0.0,<5.0.0" },
 ]
 provides-extras = ["dev", "test", "docs"]
 

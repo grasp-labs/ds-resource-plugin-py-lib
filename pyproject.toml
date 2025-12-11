@@ -7,11 +7,11 @@ name = "ds-resource-plugin-py-lib"
 dynamic = ["version"]
 description = "A Python package from the ds-common library collection"
 dependencies = [
-    "pandas>=2.1.0",
-    "awswrangler>=3.11.0",
-    "pyyaml>=6.0.2",
-    "typing-extensions>=4.0.0",
-    "ds-common-logger-py-lib>=0.1.3a0",
+    "pandas>=2.1.0,<3.0.0",
+    "awswrangler>=3.11.0,<4.0.0",
+    "pyyaml>=6.0.2,<7.0.0",
+    "typing-extensions>=4.0.0,<5.0.0",
+    "ds-common-logger-py-lib>=0.1.3a0,<1.0.0",
 ]
 requires-python = ">=3.11"
 license = "Apache-2.0"

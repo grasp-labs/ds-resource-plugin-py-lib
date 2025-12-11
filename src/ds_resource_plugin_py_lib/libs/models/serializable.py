@@ -39,10 +39,7 @@ except ImportError:
     DatasetTypedProperties = None  # type: ignore[assignment,misc]
     LinkedServiceTypedProperties = None  # type: ignore[assignment,misc]
 
-# Concrete runtime type for typing.TypeVar instances
 TypeVarType = type(TypeVar("_T_RUNTIME_MARKER_"))
-
-
 T = TypeVar("T", bound="Serializable")
 
 
@@ -83,7 +80,7 @@ class Serializable(LoggingMixin):
         return result
 
     @classmethod
-    def deserialize(cls: type[T], data: Mapping[str, Any]) -> T:  # noqa: PLR0912, PLR0915
+    def deserialize(cls: type[T], data: Mapping[str, Any]) -> T:
         """Create an instance from a mapping.
 
         The method performs best-effort conversions guided by type hints:
@@ -96,154 +93,312 @@ class Serializable(LoggingMixin):
         functions take precedence over generic conversions.
 
         Raises:
-            TypeError: If ``cls`` is not a dataclass.
+            Exception: If ``cls`` is not a dataclass or field processing fails.
         """
+        deserializers = getattr(cls, "__deserializers__", {}) or {}
+        type_var_map = _build_type_var_map(cls)
+        cls_own_hints = _get_class_type_hints(cls)
+        class_fields = _get_dataclass_fields(cls)
 
         kwargs: dict[str, Any] = {}
-        deserializers = getattr(cls, "__deserializers__", {}) or {}
+        for field in class_fields:
+            if field.name not in data:
+                continue
 
-        # Resolve generic TypeVars used by this class through its specialized bases
-        # Example: class FooModel(Generic[T]); class BarModel(FooModel[Concrete])
-        # We map T -> Concrete so hints using T can be concretized at runtime
-        type_var_map: dict[Any, Any] = {}
-        for base_alias in getattr(cls, "__orig_bases__", []) or []:
-            origin = get_origin(base_alias)
-            args = get_args(base_alias)
-            try:
-                params = getattr(origin, "__parameters__", ())
-            except Exception:
-                params = ()
-            for param, arg in zip(params or (), args or (), strict=True):
-                type_var_map[param] = arg
-
-        # Try to get type hints from the class itself (may fail due to TypeVar issues)
-        # We primarily rely on dataclass field types (f.type) which are more reliable
-        cls_own_hints: dict[str, Any] = {}
-        try:
-            module = sys.modules.get(cls.__module__)
-            module_globals = vars(module) if module is not None else {}
-            cls_own_hints = (
-                get_type_hints(
-                    cls,
-                    globalns=module_globals,
-                    localns=None,
-                )
-                or {}
+            raw_value = data[field.name]
+            converted_value = _process_field(
+                field=field,
+                raw_value=raw_value,
+                deserializers=deserializers,
+                cls_own_hints=cls_own_hints,
+                type_var_map=type_var_map,
+                cls=cls,
             )
-        except Exception as exc:
-            logger.debug("Failed to get type hints for %s: %s", cls.__name__, exc)
-
-        try:
-            class_fields = dc_fields(cast("Any", cls))
-        except Exception as exc:
-            raise Exception(
-                str(exc),
-                {
-                    "type": type(exc).__name__,
-                    "class_name": cls.__name__,
-                },
-            ) from exc
-
-        def _iter_subclasses(base: type) -> Iterable[type]:
-            seen: set[type] = set()
-            stack: list[type] = [base]
-            while stack:
-                current = stack.pop()
-                for sub in getattr(current, "__subclasses__", lambda: [])():
-                    if sub not in seen:
-                        seen.add(sub)
-                        yield sub
-                        stack.append(sub)
-
-        for f in class_fields:
-            name = f.name
-            if name not in data:
-                continue
-
-            raw_value = data[name]
-
-            # Field-specific converter takes precedence
-            converter = deserializers.get(name)
-            if callable(converter):
-                kwargs[name] = converter(raw_value)
-                continue
-
-            # Resolve type hint: prioritize dataclass field type (f.type) as it's most reliable
-            # for concrete class annotations. Fall back to cls_own_hints if f.type is a TypeVar.
-            if f.type and not isinstance(f.type, TypeVarType) and f.type is not Any:
-                hint = f.type
-            elif name in cls_own_hints:
-                hint = cls_own_hints[name]
-            else:
-                hint = f.type
-
-            # Resolve TypeVar if needed
-            if isinstance(hint, TypeVarType):
-                hint = type_var_map.get(hint, getattr(hint, "__bound__", Any))
-
-            # Handle string annotations from __future__ import annotations
-            if isinstance(hint, str):
-                module = sys.modules.get(cls.__module__)
-                module_globals = vars(module) if module is not None else {}
-                try:
-                    resolved_hints = get_type_hints(
-                        cls,
-                        globalns=module_globals,
-                        localns={},
-                    )
-                    if name in resolved_hints:
-                        hint = resolved_hints[name]
-                except Exception as exc:
-                    logger.debug(
-                        "Failed to resolve type hint '%s' for %s.%s: %s",
-                        hint,
-                        cls.__name__,
-                        name,
-                        exc,
-                    )
-
-            # Structural specialization: only for base classes that need subclass selection
-            # If hint is already a concrete class (e.g., HttpDatasetTypedProperties), use it directly
-            if (
-                isinstance(raw_value, Mapping)
-                and isinstance(hint, type)
-                and issubclass(hint, Serializable)
-                and DatasetTypedProperties is not None
-                and LinkedServiceTypedProperties is not None
-                and hint in (DatasetTypedProperties, LinkedServiceTypedProperties)
-            ):
-                try:
-                    subclasses = list(_iter_subclasses(hint))
-                    if subclasses:
-                        value_keys = set(dict(raw_value).keys())
-                        candidates = [sub for sub in subclasses if value_keys.issubset({fld.name for fld in dc_fields(sub)})]
-                        if candidates:
-                            # Prefer same-module subclasses, then most specific (most fields)
-                            same_module = [c for c in candidates if getattr(c, "__module__", None) == cls.__module__]
-                            pool = same_module or candidates
-                            selected = max(
-                                pool,
-                                key=lambda c: len(getattr(c, "__dataclass_fields__", {}) or {}),
-                            )
-                            selected_fields = len(getattr(selected, "__dataclass_fields__", {}) or {})
-                            hint_fields = len(getattr(hint, "__dataclass_fields__", {}) or {})
-                            if selected != hint and selected_fields > hint_fields:
-                                hint = selected
-                except Exception:  # nosec
-                    pass
-            kwargs[name] = _convert_value(raw_value, hint)
+            kwargs[field.name] = converted_value
 
         instance = cls(**kwargs)
-
-        # Ensure fields with init=False and defaults are set
-        for f in class_fields:
-            if not f.init and not hasattr(instance, f.name):
-                if f.default is not MISSING:
-                    setattr(instance, f.name, f.default)
-                elif f.default_factory is not MISSING:
-                    setattr(instance, f.name, f.default_factory())
-
+        _set_init_false_fields(instance, class_fields)
         return instance
+
+
+def _build_type_var_map(cls: type) -> dict[Any, Any]:
+    """Build a mapping from TypeVars to their concrete types.
+
+    Resolves generic TypeVars used by this class through its specialized bases.
+    Example: class FooModel(Generic[T]); class BarModel(FooModel[Concrete])
+    We map T -> Concrete so hints using T can be concretized at runtime.
+
+    Args:
+        cls: The class to analyze for TypeVar mappings.
+
+    Returns:
+        A dictionary mapping TypeVar instances to their concrete types.
+    """
+    type_var_map: dict[Any, Any] = {}
+    for base_alias in getattr(cls, "__orig_bases__", []) or []:
+        origin = get_origin(base_alias)
+        if origin is None:
+            continue
+        args = get_args(base_alias)
+        try:
+            params = origin.__parameters__
+        except (AttributeError, Exception):
+            continue
+        if params and args:
+            for param, arg in zip(params, args, strict=True):
+                type_var_map[param] = arg
+    return type_var_map
+
+
+def _get_class_type_hints(cls: type) -> dict[str, Any]:
+    """Get type hints from the class itself.
+
+    Attempts to retrieve type hints from the class, handling potential
+    TypeVar issues gracefully. This is a fallback mechanism as we primarily
+    rely on dataclass field types (f.type) which are more reliable.
+
+    Args:
+        cls: The class to get type hints for.
+
+    Returns:
+        A dictionary mapping field names to their type hints, or an empty dict
+        if type hints cannot be retrieved.
+    """
+    try:
+        module = sys.modules.get(cls.__module__)
+        module_globals = vars(module) if module is not None else {}
+        return (
+            get_type_hints(
+                cls,
+                globalns=module_globals,
+                localns=None,
+            )
+            or {}
+        )
+    except Exception as exc:
+        logger.debug("Failed to get type hints for %s: %s", cls.__name__, exc)
+        return {}
+
+
+def _get_dataclass_fields(cls: type) -> tuple[Any, ...]:
+    """Get dataclass fields for the given class.
+
+    Args:
+        cls: The dataclass to get fields for.
+
+    Returns:
+        A tuple of dataclass Field objects.
+
+    Raises:
+        Exception: If the class is not a dataclass, with context about the error.
+    """
+    try:
+        return dc_fields(cast("Any", cls))
+    except Exception as exc:
+        raise Exception(
+            str(exc),
+            {
+                "type": type(exc).__name__,
+                "class_name": cls.__name__,
+            },
+        ) from exc
+
+
+def _iter_subclasses(base: type) -> Iterable[type]:
+    """Iterate through all subclasses of a base class.
+
+    Uses a depth-first traversal to find all subclasses, avoiding duplicates.
+
+    Args:
+        base: The base class to find subclasses for.
+
+    Yields:
+        Each subclass of the base class, in no particular order.
+    """
+    seen: set[type] = set()
+    stack: list[type] = [base]
+    while stack:
+        current = stack.pop()
+        for sub in getattr(current, "__subclasses__", lambda: [])():
+            if sub not in seen:
+                seen.add(sub)
+                yield sub
+                stack.append(sub)
+
+
+def _resolve_type_hint_for_field(
+    field: Any,
+    field_name: str,
+    cls_own_hints: dict[str, Any],
+    type_var_map: dict[Any, Any],
+    cls: type,
+) -> Any:
+    """Resolve the type hint for a dataclass field.
+
+    Prioritizes dataclass field type (f.type) as it's most reliable for
+    concrete class annotations. Falls back to cls_own_hints if f.type is a TypeVar.
+    Handles string annotations from __future__ import annotations.
+
+    Args:
+        field: The dataclass Field object.
+        field_name: The name of the field.
+        cls_own_hints: Type hints retrieved from the class itself.
+        type_var_map: Mapping of TypeVars to their concrete types.
+        cls: The class containing the field.
+
+    Returns:
+        The resolved type hint, or Any if resolution fails.
+    """
+    # Resolve type hint: prioritize dataclass field type (f.type) as it's most reliable
+    # for concrete class annotations. Fall back to cls_own_hints if f.type is a TypeVar.
+    if field.type and not isinstance(field.type, TypeVarType) and field.type is not Any:
+        hint = field.type
+    elif field_name in cls_own_hints:
+        hint = cls_own_hints[field_name]
+    else:
+        hint = field.type
+
+    # Resolve TypeVar if needed
+    if isinstance(hint, TypeVarType):
+        hint = type_var_map.get(hint, getattr(hint, "__bound__", Any))
+
+    # Handle string annotations from __future__ import annotations
+    if isinstance(hint, str):
+        module = sys.modules.get(cls.__module__)
+        module_globals = vars(module) if module is not None else {}
+        try:
+            resolved_hints = get_type_hints(
+                cls,
+                globalns=module_globals,
+                localns={},
+            )
+            if field_name in resolved_hints:
+                hint = resolved_hints[field_name]
+        except Exception as exc:
+            logger.debug(
+                "Failed to resolve type hint '%s' for %s.%s: %s",
+                hint,
+                cls.__name__,
+                field_name,
+                exc,
+            )
+
+    return hint
+
+
+def _apply_structural_specialization(
+    raw_value: Any,
+    hint: Any,
+    cls: type,
+) -> Any:
+    """Apply structural specialization for base classes that need subclass selection.
+
+    Only applies to DatasetTypedProperties and LinkedServiceTypedProperties.
+    If the hint is already a concrete class (e.g., HttpDatasetTypedProperties),
+    it is used directly. Otherwise, selects the most specific subclass that matches
+    the structure of the raw_value.
+
+    Args:
+        raw_value: The raw value to deserialize (must be a Mapping).
+        hint: The type hint to specialize.
+        cls: The class being deserialized (used for module preference).
+
+    Returns:
+        The specialized type hint, or the original hint if specialization doesn't apply.
+    """
+    # Structural specialization: only for base classes that need subclass selection
+    # If hint is already a concrete class (e.g., HttpDatasetTypedProperties), use it directly
+    if (
+        isinstance(raw_value, Mapping)
+        and isinstance(hint, type)
+        and issubclass(hint, Serializable)
+        and DatasetTypedProperties is not None
+        and LinkedServiceTypedProperties is not None
+        and hint in (DatasetTypedProperties, LinkedServiceTypedProperties)
+    ):
+        try:
+            subclasses = list(_iter_subclasses(hint))
+            if subclasses:
+                value_keys = set(dict(raw_value).keys())
+                candidates = [sub for sub in subclasses if value_keys.issubset({fld.name for fld in dc_fields(sub)})]
+                if candidates:
+                    # Prefer same-module subclasses, then most specific (most fields)
+                    same_module = [c for c in candidates if getattr(c, "__module__", None) == cls.__module__]
+                    pool = same_module or candidates
+                    selected = max(
+                        pool,
+                        key=lambda c: len(getattr(c, "__dataclass_fields__", {}) or {}),
+                    )
+                    selected_fields = len(getattr(selected, "__dataclass_fields__", {}) or {})
+                    hint_fields = len(getattr(hint, "__dataclass_fields__", {}) or {})
+                    if selected != hint and selected_fields > hint_fields:
+                        hint = selected
+        except Exception:  # nosec
+            pass
+    return hint
+
+
+def _process_field(
+    field: Any,
+    raw_value: Any,
+    deserializers: dict[str, Any],
+    cls_own_hints: dict[str, Any],
+    type_var_map: dict[Any, Any],
+    cls: type,
+) -> Any:
+    """Process a single field during deserialization.
+
+    Applies field-specific converters if available, otherwise resolves type hints
+    and converts the value using the appropriate strategy.
+
+    Args:
+        field: The dataclass Field object.
+        raw_value: The raw value from the input data.
+        deserializers: Dictionary of field name -> converter function.
+        cls_own_hints: Type hints retrieved from the class itself.
+        type_var_map: Mapping of TypeVars to their concrete types.
+        cls: The class being deserialized.
+
+    Returns:
+        The converted value for the field.
+    """
+    # Field-specific converter takes precedence
+    converter = deserializers.get(field.name)
+    if callable(converter):
+        return converter(raw_value)
+
+    # Resolve type hint
+    hint = _resolve_type_hint_for_field(
+        field=field,
+        field_name=field.name,
+        cls_own_hints=cls_own_hints,
+        type_var_map=type_var_map,
+        cls=cls,
+    )
+
+    # Apply structural specialization if applicable
+    hint = _apply_structural_specialization(raw_value, hint, cls)
+
+    # Convert the value using the resolved hint
+    return _convert_value(raw_value, hint)
+
+
+def _set_init_false_fields(instance: Any, class_fields: tuple[Any, ...]) -> None:
+    """Set fields with init=False and defaults after instance creation.
+
+    Ensures that fields marked with init=False receive their default values
+    or default_factory results if they weren't set during construction.
+
+    Args:
+        instance: The newly created instance.
+        class_fields: List of dataclass Field objects.
+    """
+    for field in class_fields:
+        if not field.init and not hasattr(instance, field.name):
+            if field.default is not MISSING:
+                setattr(instance, field.name, field.default)
+            elif field.default_factory is not MISSING:
+                setattr(instance, field.name, field.default_factory())
 
 
 def _serialize_value(value: Any) -> Any:
@@ -251,6 +406,12 @@ def _serialize_value(value: Any) -> Any:
 
     Returns a structure comprised of dicts, lists, and primitives that can be
     JSON-encoded without custom hooks.
+
+    Args:
+        value: The value to serialize.
+
+    Returns:
+        The serialized value.
     """
     if value is None:
         return None
@@ -293,6 +454,13 @@ def _convert_value(value: Any, type_hint: Any) -> Any:  # noqa: PLR0912
     - For ``Union`` (including ``Optional``), attempt each member type until one succeeds.
 
     Forward references are intentionally left unresolved to avoid import-time cycles.
+
+    Args:
+        value: The value to convert.
+        type_hint: The type hint to use for conversion.
+
+    Returns:
+        The converted value.
     """
     if value is None or type_hint is Any:
         return value
@@ -350,8 +518,13 @@ def _convert_value(value: Any, type_hint: Any) -> Any:  # noqa: PLR0912
         val_t = args[1] if len(args) == 2 else Any
         return {_convert_value(k, key_t): _convert_value(v, val_t) for k, v in dict(value).items()}
 
-    # typing.Union[...] (including Optional)
-    if origin is getattr(__import__("typing"), "Union", None):
+    typing_union = getattr(__import__("typing"), "Union", None)
+    try:
+        types_union = __import__("types").UnionType
+    except (ImportError, AttributeError):
+        types_union = None
+
+    if origin is typing_union or origin is types_union:
         last_err: Exception | None = None
         for arg in args:
             if arg is type(None):

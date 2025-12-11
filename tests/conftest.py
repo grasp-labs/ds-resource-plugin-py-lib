@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock
 
+import pandas as pd
 import pytest
 
 from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset
@@ -118,3 +119,21 @@ def mock_linked_service_class():
     mock_instance = Mock(spec=LinkedService)
     mock_cls.deserialize = Mock(return_value=mock_instance)
     return mock_cls
+
+
+@pytest.fixture
+def sample_dataframe():
+    """Provide a small pandas DataFrame for serialization and deserialization tests."""
+    return pd.DataFrame({"id": [1, 2], "value": [10.5, 20.75]})
+
+
+@pytest.fixture
+def boto3_session():
+    """Provide a lightweight mock boto3 session object."""
+    return Mock(name="boto3_session")
+
+
+@pytest.fixture
+def semi_structured_json():
+    """Provide nested JSON data for semi-structured deserialization tests."""
+    return [{"id": 1, "payload": {"nested": True}}, {"id": 2, "payload": {"nested": False}}]
