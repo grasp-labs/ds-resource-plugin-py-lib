@@ -13,7 +13,7 @@ dependencies = [
     "typing-extensions>=4.0.0",
     "ds-common-logger-py-lib>=0.1.3a0",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE-APACHE"]
 keywords = ["ds", "common", "python"]
@@ -26,8 +26,6 @@ maintainers = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
