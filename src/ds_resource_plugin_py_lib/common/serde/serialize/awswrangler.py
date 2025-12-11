@@ -8,7 +8,7 @@ from ...serde.serialize.base import DataSerializer
 
 
 class AwsWranglerSerializer(DataSerializer):
-    def __init__(self, *, format: str, **kwargs: Any) -> None:
+    def __init__(self, *, format: DatasetStorageFormatType, **kwargs: Any) -> None:
         self.format = format
         self.args = kwargs
 
