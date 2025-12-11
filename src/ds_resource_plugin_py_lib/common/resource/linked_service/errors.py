@@ -12,8 +12,8 @@ class LinkedServiceException(ResourceException):
 
     def __init__(
         self,
-        code: str = "LINKED_SERVICE_ERROR",
         message: str = "Linked service operation failed",
+        code: str = "LINKED_SERVICE_ERROR",
         status_code: int = 500,
         details: dict[str, Any] | None = None,
     ) -> None:

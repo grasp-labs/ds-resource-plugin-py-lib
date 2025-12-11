@@ -513,7 +513,7 @@ def _convert_value(value: Any, type_hint: Any) -> Any:  # noqa: PLR0912
             return set(converted_list)
         return converted_list
 
-    if origin in (dict, dict, Mapping):
+    if origin in (dict, Mapping):
         key_t = args[0] if len(args) == 2 else Any
         val_t = args[1] if len(args) == 2 else Any
         return {_convert_value(k, key_t): _convert_value(v, val_t) for k, v in dict(value).items()}
