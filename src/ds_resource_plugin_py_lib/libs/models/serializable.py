@@ -333,8 +333,8 @@ def _apply_structural_specialization(
                     hint_fields = len(getattr(hint, "__dataclass_fields__", {}) or {})
                     if selected != hint and selected_fields > hint_fields:
                         hint = selected
-        except Exception:  # nosec
-            pass
+        except Exception as exc:
+            logger.debug(f"Failed to select subclass for {cls.__name__}: {exc}")
     return hint
 
 
