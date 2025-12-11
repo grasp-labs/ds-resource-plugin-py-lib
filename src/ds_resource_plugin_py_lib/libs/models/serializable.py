@@ -183,16 +183,19 @@ class Serializable(LoggingMixin):
 
             # Handle string annotations from __future__ import annotations
             if isinstance(hint, str):
+                module = sys.modules.get(cls.__module__)
+                module_globals = vars(module) if module is not None else {}
                 try:
-                    module = sys.modules.get(cls.__module__)
-                    module_globals = vars(module) if module is not None else {}
-                    # nosec B307: eval is necessary to resolve string annotations from
-                    # __future__ import annotations. The input is controlled (from class annotations)
-                    # and we use restricted globals/locals for safety.
-                    hint = eval(hint, module_globals, {})  # nosec B307
+                    resolved_hints = get_type_hints(
+                        cls,
+                        globalns=module_globals,
+                        localns={},
+                    )
+                    if name in resolved_hints:
+                        hint = resolved_hints[name]
                 except Exception as exc:
                     logger.debug(
-                        "Failed to evaluate type hint '%s' for %s.%s: %s",
+                        "Failed to resolve type hint '%s' for %s.%s: %s",
                         hint,
                         cls.__name__,
                         name,
