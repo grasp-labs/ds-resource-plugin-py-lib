@@ -69,12 +69,6 @@ class Dataset(
     next: bool | None = True
     cursor: str | None = None
 
-    def _inject_linked_service(self, linked_service: LinkedServiceType) -> None:
-        """
-        Inject the linked service into the dataset.
-        """
-        self.linked_service = linked_service
-
     @property
     @abstractmethod
     def kind(self) -> str:
