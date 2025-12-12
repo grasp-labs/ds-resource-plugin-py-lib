@@ -11,7 +11,7 @@ dependencies = [
     "awswrangler>=3.11.0,<4.0.0",
     "pyyaml>=6.0.2,<7.0.0",
     "typing-extensions>=4.0.0,<5.0.0",
-    "ds-common-logger-py-lib>=0.1.3a0,<1.0.0",
+    "ds-common-logger-py-lib>=0.1.0a1,<1.0.0",
 ]
 requires-python = ">=3.11"
 license = "Apache-2.0"
@@ -24,14 +24,13 @@ maintainers = [
     {name = "Kristoffer Varslott", email = "hello@grasplabs.com"}
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: System :: Logging",
 ]
 readme = "PyPI.md"
 
@@ -82,14 +81,3 @@ where = ["src"]
 
 [tool.setuptools.package-dir]
 "" = "src"
-
-[[tool.uv.index]]
-name = "pypi"
-url = "https://pypi.org/simple/"
-
-[[tool.uv.index]]
-name = "testpypi"
-url = "https://test.pypi.org/simple/"
-
-[tool.uv.sources]
-ds-common-logger-py-lib = { index = "testpypi" }
