@@ -24,34 +24,28 @@ from ds_resource_plugin_py_lib import __version__
 print(f"ds-resource-plugin-py-lib version: {__version__}")
 ```
 
-## Features
-
-<!-- List your package features here -->
-- Feature 1: Description of feature 1
-- Feature 2: Description of feature 2
-- Feature 3: Description of feature 3
-
 ## Usage
-
-<!-- Add usage examples here -->
 
 ```python
 # Example usage
-import ds_resource_plugin_py_lib
+from ds_resource_plugin_py_lib.common.resource import ResourceClient
 
-# Your code examples here
+resource_client = ResourceClient()
+linked_service = resource_client.linked_service(config=config)
+dataset = resource_client.dataset(config=config)
+
+linked_service.connect()
+
+dataset.create()
+dataset.read()
+dataset.delete()
+dataset.update()
+dataset.rename()
 ```
 
 ## Requirements
 
-- Python 3.9 or higher
-- <!-- List any required dependencies -->
-
-## Optional Dependencies
-
-<!-- List optional dependencies if any -->
-- Optional dependency 1: Description
-- Optional dependency 2: Description
+- Python 3.11 or higher
 
 ## Documentation
 
