@@ -8,7 +8,7 @@
 SRC_DIR         ?= src
 TEST_DIR        ?= tests
 DOCS_DIR        ?= docs
-MODULE_NAME     ?= {{PYTHON_MODULE_NAME}}
+MODULE_NAME     ?= ds_resource_plugin_py_lib
 
 # Colors for terminal output
 BLUE := \033[0;34m
@@ -20,7 +20,7 @@ NC := \033[0m # No Color
 
 .PHONY: help
 help: ## Show this help message
-	@echo "$(BLUE)DS Shared Logger - Development Commands$(NC)"
+	@echo "$(BLUE)DS Resource Plugin Python Library - Development Commands$(NC)"
 	@echo ""
 	@echo "$(GREEN)Available commands:$(NC)"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,6 +39,7 @@ clean: ## Clean build and cache artifacts
 .PHONY: lint
 lint: ## Lint with ruff
 	uv run ruff check --config .config/ruff.toml --fix --exit-non-zero-on-fix $(SRC_DIR) $(TEST_DIR)
+	uv run pre-commit run markdownlint --all-files
 
 .PHONY: format
 format: ## Format with ruff

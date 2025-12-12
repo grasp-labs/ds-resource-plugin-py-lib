@@ -15,5 +15,3 @@ health:
     - targets: "*"
       cover: 90
       status: warning
-
-
