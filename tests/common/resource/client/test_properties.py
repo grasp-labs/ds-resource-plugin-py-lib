@@ -1,7 +1,10 @@
 """
-File: test_properties.py
-Description: Test properties and internal state
-Region: packages/shared
+**File:** ``test_properties.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test properties and internal state.
 """
 
 from unittest.mock import Mock, patch

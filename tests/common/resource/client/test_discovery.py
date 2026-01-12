@@ -1,7 +1,10 @@
 """
-File: test_discovery.py
-Description: Test resource discovery via entry points
-Region: packages/shared
+**File:** ``test_discovery.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test resource discovery via entry points.
 """
 
 from unittest.mock import Mock, patch

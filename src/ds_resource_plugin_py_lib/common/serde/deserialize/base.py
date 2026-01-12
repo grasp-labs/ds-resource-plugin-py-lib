@@ -1,10 +1,22 @@
+"""
+**File:** ``base.py``
+**Region:** ``ds_resource_plugin_py_lib/common/serde/deserialize``
+
+Description
+-----------
+Base classes for deserializers.
+"""
+
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from ds_common_logger_py_lib import LoggingMixin
+from ds_common_serde_py_lib import Serializable
 
 
-class DataDeserializer(LoggingMixin):
+@dataclass(kw_only=True)
+class DataDeserializer(Serializable, LoggingMixin):
     """
     Extensible class to deserialize dataset content.
 

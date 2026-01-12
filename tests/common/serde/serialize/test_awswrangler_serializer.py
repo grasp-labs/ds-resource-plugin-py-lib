@@ -1,7 +1,10 @@
 """
-File: test_awswrangler_serializer.py
-Description: Tests for AwsWranglerSerializer covering supported formats and validation.
-Region: packages/shared
+**File:** ``test_awswrangler_serializer.py``
+**Region:** ``tests/common/serde/serialize``
+
+Description
+-----------
+Tests for `AwsWranglerSerializer` covering supported formats and validation.
 """
 
 from typing import cast
@@ -39,8 +42,11 @@ class TestAwsWranglerSerializer:
     def test_xml_uploads_string(self, sample_dataframe, boto3_session):
         """Convert DataFrame to XML and upload via awswrangler.s3.upload."""
         target = "ds_resource_plugin_py_lib.common.serde.serialize.awswrangler.wr.s3.upload"
+        kwargs = {
+            "path": "s3://bucket/data.xml",
+        }
         with patch(target, return_value="uploaded") as mock_upload:
-            serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.XML, path="s3://bucket/data.xml")
+            serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.XML, kwargs=kwargs)
 
             result = serializer(sample_dataframe, boto3_session=boto3_session)
 

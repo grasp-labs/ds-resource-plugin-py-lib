@@ -1,7 +1,10 @@
 """
-File: test_dataset_info.py
-Description: Tests for DatasetInfo helpers.
-Region: packages/shared
+**File:** ``test_dataset_info.py``
+**Region:** ``tests/common/resource/dataset``
+
+Description
+-----------
+Tests for `DatasetInfo` helpers.
 """
 
 from ds_resource_plugin_py_lib.common.resource.dataset.base import DatasetInfo

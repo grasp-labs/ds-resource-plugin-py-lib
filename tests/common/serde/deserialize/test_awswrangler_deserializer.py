@@ -1,7 +1,10 @@
 """
-File: test_awswrangler_deserializer.py
-Description: Tests for AwsWranglerDeserializer covering supported formats and validation.
-Region: packages/shared
+**File:** ``test_awswrangler_deserializer.py``
+**Region:** ``tests/common/serde/deserialize``
+
+Description
+-----------
+Tests for `AwsWranglerDeserializer` covering supported formats and validation.
 """
 
 import json

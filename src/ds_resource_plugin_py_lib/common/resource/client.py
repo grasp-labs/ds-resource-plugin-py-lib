@@ -1,7 +1,29 @@
 """
-File: client.py
-Description: Resource client for discovering and managing datasets and linked services using entry points
-Region: packages/shared
+**File:** ``client.py``
+**Region:** ``ds_resource_plugin_py_lib/common/resource``
+
+Description
+-----------
+Resource client for discovering and managing datasets and linked services using entry points.
+
+Example
+-------
+.. code-block:: python
+
+    from ds_resource_plugin_py_lib.common.resource.client import ResourceClient
+
+    client = ResourceClient()
+
+    # Inspect discovered resources (populated via Python entry points).
+    print(client.resources.keys())
+    print(client.linked_services.keys())
+    print(client.datasets.keys())
+
+    dataset = client.dataset(config={"kind": "dataset.example", "version": "1.0.0"})
+    linked_service = client.linked_service(config={"kind": "linked_service.example", "version": "1.0.0"})
+
+    print(linked_service.connect())
+    print(dataset.read())
 """
 
 import logging
@@ -13,10 +35,10 @@ from typing import Any, cast
 
 import yaml
 from ds_common_logger_py_lib.mixin import LoggingMixin
+from ds_common_serde_py_lib.errors import DeserializationError
 
 from ...libs.utils.import_string import import_string
 from ..resource.dataset.base import Dataset, DatasetInfo
-from ..resource.errors import DeserializationException
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
 
 
@@ -166,7 +188,7 @@ class ResourceClient(LoggingMixin):
                 )
                 self._datasets[dataset_info.key] = dataset_info
 
-    def _get_dataset_model_cls(self, kind: str, version: str) -> type[Dataset[Any, Any]]:
+    def _get_dataset_model_cls(self, kind: str, version: str) -> type[Dataset[Any, Any, Any, Any]]:
         """
         Get a dataset model class by kind and optionally version.
 
@@ -178,7 +200,7 @@ class ResourceClient(LoggingMixin):
         """
         cls_name = self.datasets[(kind, version)].class_name
         self.log.debug("Dataset Class Name: %s", cls_name)
-        return cast("type[Dataset[Any, Any]]", import_string(cls_name))
+        return cast("type[Dataset[Any, Any, Any, Any]]", import_string(cls_name))
 
     def _get_linked_service_model_cls(self, kind: str, version: str) -> type[LinkedService[Any]]:
         """
@@ -202,6 +224,8 @@ class ResourceClient(LoggingMixin):
             config: dict containing at least 'kind' and 'version'
         Returns:
             LinkedService
+        Raises:
+            DeserializationError: If the linked service cannot be deserialized.
         """
         try:
             kind = config["kind"]
@@ -211,12 +235,12 @@ class ResourceClient(LoggingMixin):
             return linked_service
         except (TypeError, KeyError) as exc:
             self.log.exception(f"Error deserializing linked service: {exc}")
-            raise DeserializationException(
+            raise DeserializationError(
                 message=f"Error deserializing linked service: {exc}",
                 details={"config": config, "error": str(exc)},
             ) from exc
 
-    def dataset(self, config: dict[str, Any]) -> Dataset[Any, Any]:
+    def dataset(self, config: dict[str, Any]) -> Dataset[Any, Any, Any, Any]:
         """
         Get a dataset instance by configuration.
 
@@ -224,16 +248,18 @@ class ResourceClient(LoggingMixin):
             config: dict containing at least 'kind' and 'version'
         Returns:
             Dataset
+        Raises:
+            DeserializationError: If the dataset cannot be deserialized.
         """
         try:
             kind = config["kind"]
             version = config["version"]
             dataset_cls = self._get_dataset_model_cls(kind, version)
-            dataset: Dataset[Any, Any] = dataset_cls.deserialize(config)
+            dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset
         except (TypeError, KeyError) as exc:
             self.log.exception(f"Error deserializing dataset: {exc}")
-            raise DeserializationException(
+            raise DeserializationError(
                 message=f"Error deserializing dataset: {exc}",
                 details={"config": config, "error": str(exc)},
             ) from exc

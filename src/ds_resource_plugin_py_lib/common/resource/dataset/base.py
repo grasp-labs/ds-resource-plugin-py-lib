@@ -1,18 +1,32 @@
+"""
+**File:** ``base.py``
+**Region:** ``ds_resource_plugin_py_lib/common/resource/dataset``
+
+Description
+-----------
+Base dataset models and typed properties.
+"""
+
 import io
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, Generic, NamedTuple, TypeVar
 
 import pandas as pd
+from ds_common_serde_py_lib import Serializable
 
-from ....libs.models.serializable import Serializable
 from ...resource.linked_service.base import LinkedService
 from ...serde.deserialize.base import DataDeserializer
 from ...serde.serialize.base import DataSerializer
 
 
 class DatasetInfo(NamedTuple):
+    """
+    NamedTuple that represents the dataset information.
+    """
+
     kind: str
     name: str
     class_name: str
@@ -20,12 +34,22 @@ class DatasetInfo(NamedTuple):
     description: str | None = None
 
     def __str__(self) -> str:
-        """Return a string representation of the dataset info."""
+        """
+        Return a string representation of the dataset info.
+
+        Returns:
+            A string representation of the dataset info.
+        """
         return f"{self.kind}:v{self.version}"
 
     @property
     def key(self) -> tuple[str, str]:
-        """Return the composite key (kind, version) for dictionary lookups."""
+        """
+        Return the composite key (kind, version) for dictionary lookups.
+
+        Returns:
+            A tuple containing the kind and version.
+        """
         return (self.kind, self.version)
 
 
@@ -40,13 +64,15 @@ class DatasetTypedProperties(Serializable):
 
 DatasetTypedPropertiesType = TypeVar("DatasetTypedPropertiesType", bound=DatasetTypedProperties)
 LinkedServiceType = TypeVar("LinkedServiceType", bound=LinkedService[Any])
+SerializerType = TypeVar("SerializerType", bound=DataSerializer)
+DeserializerType = TypeVar("DeserializerType", bound=DataDeserializer)
 
 
 @dataclass(kw_only=True)
 class Dataset(
     ABC,
     Serializable,
-    Generic[LinkedServiceType, DatasetTypedPropertiesType],
+    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
 ):
     """
     The ds workflow nested object which identifies data within a data store,
@@ -58,8 +84,8 @@ class Dataset(
     typed_properties: DatasetTypedPropertiesType
     linked_service: LinkedServiceType
 
-    serializer: DataSerializer | None = None
-    deserializer: DataDeserializer | None = None
+    serializer: SerializerType | None = None
+    deserializer: DeserializerType | None = None
 
     post_fetch_callback: Callable[..., Any] | None = None
     prepare_write_callback: Callable[..., Any] | None = None
@@ -71,7 +97,7 @@ class Dataset(
 
     @property
     @abstractmethod
-    def kind(self) -> str:
+    def kind(self) -> StrEnum:
         """
         Get the kind of the dataset.
         """
@@ -81,8 +107,12 @@ class Dataset(
     def create(self, **kwargs: Any) -> Any:
         """
         Create the dataset.
-        :param kwargs: dict
-        :return: None
+
+        Args:
+            **kwargs: The keyword arguments to pass to the create method.
+
+        Returns:
+            The result of the create method.
         """
         raise NotImplementedError("Method (create) not implemented")
 
@@ -90,8 +120,12 @@ class Dataset(
     def read(self, **kwargs: Any) -> Any:
         """
         Read the dataset.
-        :param kwargs: dict
-        :return: None
+
+        Args:
+            **kwargs: The keyword arguments to pass to the read method.
+
+        Returns:
+            The result of the read method.
         """
         raise NotImplementedError("Method (read) not implemented")
 
@@ -99,8 +133,12 @@ class Dataset(
     def delete(self, **kwargs: Any) -> Any:
         """
         Delete the dataset.
-        :param kwargs: dict
-        :return: None
+
+        Args:
+            **kwargs: The keyword arguments to pass to the delete method.
+
+        Returns:
+            The result of the delete method.
         """
         raise NotImplementedError("Method (delete) not implemented")
 
@@ -108,25 +146,33 @@ class Dataset(
     def update(self, **kwargs: Any) -> Any:
         """
         Update the dataset.
-        :param kwargs: dict
-        :return: None
+
+        Args:
+            **kwargs: The keyword arguments to pass to the update method.
+
+        Returns:
+            The result of the update method.
         """
         raise NotImplementedError("Method (update) not implemented")
 
     @abstractmethod
     def rename(self, **kwargs: Any) -> Any:
         """
-        Move the dataset.
-        :param kwargs: dict
-        :return: None
+        Rename the dataset.
+
+        Args:
+            **kwargs: The keyword arguments to pass to the rename method.
+
+        Returns:
+            The result of the rename method.
         """
         raise NotImplementedError("Method (move) not implemented")
 
 
 @dataclass(kw_only=True)
 class BinaryDataset(
-    Dataset[LinkedServiceType, DatasetTypedPropertiesType],
-    Generic[LinkedServiceType, DatasetTypedPropertiesType],
+    Dataset[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
+    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
 ):
     """
     Binary dataset object which identifies data within a data store,
@@ -142,8 +188,8 @@ class BinaryDataset(
 
 @dataclass(kw_only=True)
 class TabularDataset(
-    Dataset[LinkedServiceType, DatasetTypedPropertiesType],
-    Generic[LinkedServiceType, DatasetTypedPropertiesType],
+    Dataset[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
+    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
 ):
     """
     Tabular dataset object which identifies data within a data store,

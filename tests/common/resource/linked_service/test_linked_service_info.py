@@ -1,7 +1,10 @@
 """
-File: test_linked_service_info.py
-Description: Tests for LinkedServiceInfo helpers.
-Region: packages/shared
+**File:** ``test_linked_service_info.py``
+**Region:** ``tests/common/resource/linked_service``
+
+Description
+-----------
+Tests for `LinkedServiceInfo` helpers.
 """
 
 from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedServiceInfo
