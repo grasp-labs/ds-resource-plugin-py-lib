@@ -87,7 +87,7 @@ docs: ## Build Sphinx documentation
 
 # ===== Versioning =====
 
-PYPROJECT_VERSION := $(shell python -c "import pathlib,re; t=pathlib.Path('pyproject.toml').read_text(encoding='utf-8'); m=re.search(r'(?ms)^\\[project\\]\\s.*?^version\\s*=\\s*\"([^\"]+)\"', t); print(m.group(1) if m else '')")
+PYPROJECT_VERSION := $(shell python -c "import pathlib, tomllib; pyproject = tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8')); print(pyproject['project']['version'])")
 
 .PHONY: version
 version: ## Show current version
