@@ -11,6 +11,7 @@ import pytest
 
 from ds_resource_plugin_py_lib.common.resource.linked_service.errors import (
     AuthenticationError,
+    AuthorizationError,
     ConnectionError,
     InvalidLinkedServiceClassError,
     InvalidLinkedServiceTypeError,
@@ -57,6 +58,12 @@ from ds_resource_plugin_py_lib.common.resource.linked_service.errors import (
             "DS_LINKED_SERVICE_CONNECTION_ERROR",
             "Connection failed",
             503,
+        ),
+        (
+            AuthorizationError,
+            "DS_LINKED_SERVICE_AUTHORIZATION_ERROR",
+            "Authorization failed",
+            403,
         ),
     ],
 )
