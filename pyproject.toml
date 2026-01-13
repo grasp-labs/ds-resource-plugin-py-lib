@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ds-resource-plugin-py-lib"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.2"
 description = "A Python package from the ds-common library collection"
 dependencies = [
     "pandas>=2.1.0,<3.0.0",
