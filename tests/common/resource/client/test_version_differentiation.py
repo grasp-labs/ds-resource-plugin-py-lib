@@ -1,17 +1,20 @@
 """
-File: test_version_differentiation.py
-Description: Test version differentiation for datasets
-Region: packages/shared
+**File:** ``test_version_differentiation.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test version differentiation for datasets.
 """
 
 from unittest.mock import Mock, patch
 
 import pytest
 import yaml
+from ds_common_serde_py_lib.errors import DeserializationError
 
 from ds_resource_plugin_py_lib.common.resource.client import ResourceClient
 from ds_resource_plugin_py_lib.common.resource.dataset.base import DatasetInfo
-from ds_resource_plugin_py_lib.common.resource.errors import DeserializationException
 
 
 class TestVersionDifferentiation:
@@ -199,6 +202,6 @@ class TestVersionDifferentiation:
             "typed_properties": {"url": "https://example.com"},
         }
 
-        with pytest.raises(DeserializationException) as exc_info:
+        with pytest.raises(DeserializationError) as exc_info:
             client.dataset(config)
         assert "version" in str(exc_info.value.details.get("error", ""))

@@ -1,7 +1,10 @@
 """
-File: test_yaml_parsing.py
-Description: Test YAML parsing and resource loading
-Region: packages/shared
+**File:** ``test_yaml_parsing.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test YAML parsing and resource loading.
 """
 
 from unittest.mock import Mock, patch

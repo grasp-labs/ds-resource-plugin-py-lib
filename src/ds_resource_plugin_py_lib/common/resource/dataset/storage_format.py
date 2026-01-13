@@ -1,8 +1,29 @@
+"""
+**File:** ``storage_format.py``
+**Region:** ``ds_resource_plugin_py_lib/common/resource/dataset``
+
+Description
+-----------
+Storage format models for datasets.
+
+Example
+-------
+.. code-block:: python
+
+    from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import (
+        CsvFormat,
+        DatasetStorageFormatType,
+    )
+
+    fmt = CsvFormat(args={"delimiter": ";"})
+    assert fmt.type == DatasetStorageFormatType.CSV
+"""
+
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from ....libs.models.serializable import Serializable
+from ds_common_serde_py_lib import Serializable
 
 
 class DatasetStorageFormatType(StrEnum):

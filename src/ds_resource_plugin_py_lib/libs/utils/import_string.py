@@ -1,3 +1,22 @@
+"""
+**File:** ``import_string.py``
+**Region:** ``ds_resource_plugin_py_lib/libs/utils``
+
+Description
+-----------
+Utility function to import a dotted module path and return the attribute/class designated by the last name in the path.
+
+Example
+-------
+.. code-block:: python
+
+    from ds_resource_plugin_py_lib.libs.utils.import_string import import_string
+
+    # Import a symbol by dotted path.
+    json_loads = import_string("json.loads")
+    result = json_loads('{"a": 1}')
+"""
+
 from importlib import import_module
 from typing import Any
 
@@ -9,6 +28,11 @@ logger = Logger.get_logger(__name__)
 def import_string(dotted_path: str) -> Any:
     """
     Import a dotted module path and return the attribute/class designated by the last name in the path.
+    Args:
+        dotted_path: The dotted module path to import.
+
+    Returns:
+        The attribute/class designated by the last name in the path.
 
     Raise ImportError if the import failed.
     """

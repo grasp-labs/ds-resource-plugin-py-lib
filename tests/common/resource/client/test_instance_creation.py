@@ -1,16 +1,19 @@
 """
-File: test_instance_creation.py
-Description: Test instance creation from config dictionaries
-Region: packages/shared
+**File:** ``test_instance_creation.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test instance creation from config dictionaries.
 """
 
 from unittest.mock import Mock, patch
 
 import pytest
 import yaml
+from ds_common_serde_py_lib.errors import DeserializationError
 
 from ds_resource_plugin_py_lib.common.resource.client import ResourceClient
-from ds_resource_plugin_py_lib.common.resource.errors import DeserializationException
 
 
 class TestInstanceCreation:
@@ -114,7 +117,7 @@ class TestInstanceCreation:
         config = {"version": "1.0.0", "typed_properties": {"url": "https://example.com"}}
 
         # Execute & Assert
-        with pytest.raises(DeserializationException) as exc_info:
+        with pytest.raises(DeserializationError) as exc_info:
             client.linked_service(config)
         assert "kind" in str(exc_info.value.details.get("error", ""))
 
@@ -128,7 +131,7 @@ class TestInstanceCreation:
         config = {"version": "1.0.0", "typed_properties": {"query": "query { users }"}}
 
         # Execute & Assert
-        with pytest.raises(DeserializationException) as exc_info:
+        with pytest.raises(DeserializationError) as exc_info:
             client.dataset(config)
         assert "kind" in str(exc_info.value.details.get("error", ""))
 
@@ -142,7 +145,7 @@ class TestInstanceCreation:
         config = {"kind": "DS.RESOURCE.LINKED_SERVICE.UNKNOWN", "version": "1.0.0"}
 
         # Execute & Assert
-        with pytest.raises(DeserializationException):
+        with pytest.raises(DeserializationError):
             client.linked_service(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
@@ -155,7 +158,7 @@ class TestInstanceCreation:
         config = {"kind": "DS.RESOURCE.DATASET.UNKNOWN", "version": "1.0.0"}
 
         # Execute & Assert
-        with pytest.raises(DeserializationException):
+        with pytest.raises(DeserializationError):
             client.dataset(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
@@ -170,7 +173,7 @@ class TestInstanceCreation:
         graphql_resource_yaml,
         mock_linked_service_class,
     ):
-        """Test DeserializationException on deserialize failure."""
+        """Test DeserializationError on deserialize failure."""
         # Setup
         ep = Mock()
         ep.name = "graphql"
@@ -197,7 +200,7 @@ class TestInstanceCreation:
         }
 
         # Execute & Assert
-        with pytest.raises(DeserializationException) as exc_info:
+        with pytest.raises(DeserializationError) as exc_info:
             client.linked_service(config)
 
         assert "Error deserializing linked service" in str(exc_info.value.message)
@@ -214,7 +217,7 @@ class TestInstanceCreation:
         graphql_resource_yaml,
         mock_dataset_class,
     ):
-        """Test DeserializationException on deserialize failure."""
+        """Test DeserializationError on deserialize failure."""
         # Setup
         ep = Mock()
         ep.name = "graphql"
@@ -241,7 +244,7 @@ class TestInstanceCreation:
         }
 
         # Execute & Assert
-        with pytest.raises(DeserializationException) as exc_info:
+        with pytest.raises(DeserializationError) as exc_info:
             client.dataset(config)
 
         assert "Error deserializing dataset" in str(exc_info.value.message)

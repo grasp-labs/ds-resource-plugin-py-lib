@@ -1,7 +1,10 @@
 """
-File: test_base_deserializer.py
-Description: Tests for DataDeserializer defaults.
-Region: packages/shared
+**File:** ``test_base_deserializer.py``
+**Region:** ``tests/common/serde/deserialize``
+
+Description
+-----------
+Tests for `DataDeserializer` defaults.
 """
 
 from typing import Any

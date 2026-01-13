@@ -1,7 +1,10 @@
 """
-File: test_singleton.py
-Description: Test singleton pattern implementation
-Region: packages/shared
+**File:** ``test_singleton.py``
+**Region:** ``tests/common/resource/client``
+
+Description
+-----------
+Test singleton pattern implementation.
 """
 
 from unittest.mock import patch

@@ -1,7 +1,10 @@
 """
-File: test_import_string.py
-Description: Tests for import_string utility ensuring correct imports and errors.
-Region: packages/shared
+**File:** ``test_import_string.py``
+**Region:** ``tests/libs/utils``
+
+Description
+-----------
+Tests for the `import_string` utility ensuring correct imports and errors.
 """
 
 import sys

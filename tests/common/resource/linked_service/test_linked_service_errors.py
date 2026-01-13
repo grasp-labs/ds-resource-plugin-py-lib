@@ -1,19 +1,22 @@
 """
-File: test_linked_service_errors.py
-Description: Tests for linked service error types ensuring codes, status, and messages are preserved.
-Region: packages/shared
+**File:** ``test_linked_service_errors.py``
+**Region:** ``tests/common/resource/linked_service``
+
+Description
+-----------
+Tests for linked service error types ensuring codes, status, and messages are preserved.
 """
 
 import pytest
 
 from ds_resource_plugin_py_lib.common.resource.linked_service.errors import (
-    AuthenticationException,
-    ConnectionException,
-    InvalidLinkedServiceClass,
-    InvalidLinkedServiceTypeException,
+    AuthenticationError,
+    AuthorizationError,
+    ConnectionError,
+    InvalidLinkedServiceClassError,
+    InvalidLinkedServiceTypeError,
     LinkedServiceException,
-    UnsupportedAuthType,
-    UnsupportedLinkedServiceType,
+    UnsupportedLinkedServiceTypeError,
 )
 
 
@@ -22,45 +25,45 @@ from ds_resource_plugin_py_lib.common.resource.linked_service.errors import (
     [
         (
             LinkedServiceException,
-            "LINKED_SERVICE_ERROR",
+            "DS_LINKED_SERVICE_ERROR",
             "Linked service operation failed",
             500,
         ),
         (
-            UnsupportedLinkedServiceType,
-            "UNSUPPORTED_LINKED_SERVICE_TYPE",
+            UnsupportedLinkedServiceTypeError,
+            "DS_LINKED_SERVICE_UNSUPPORTED_TYPE_ERROR",
             "Unsupported linked service type",
             400,
         ),
         (
-            InvalidLinkedServiceTypeException,
-            "INVALID_LINKED_SERVICE_TYPE",
+            InvalidLinkedServiceTypeError,
+            "DS_LINKED_SERVICE_INVALID_TYPE_ERROR",
             "Invalid linked service type",
             400,
         ),
         (
-            InvalidLinkedServiceClass,
-            "INVALID_LINKED_SERVICE_CLASS",
+            InvalidLinkedServiceClassError,
+            "DS_LINKED_SERVICE_INVALID_CLASS_ERROR",
             "Invalid linked service class",
             400,
         ),
         (
-            UnsupportedAuthType,
-            "UNSUPPORTED_AUTH_TYPE",
-            "Unsupported auth type",
-            400,
-        ),
-        (
-            AuthenticationException,
-            "AUTHENTICATION_FAILED",
+            AuthenticationError,
+            "DS_LINKED_SERVICE_AUTHENTICATION_ERROR",
             "Authentication failed",
             401,
         ),
         (
-            ConnectionException,
-            "CONNECTION_FAILED",
+            ConnectionError,
+            "DS_LINKED_SERVICE_CONNECTION_ERROR",
             "Connection failed",
             503,
+        ),
+        (
+            AuthorizationError,
+            "DS_LINKED_SERVICE_AUTHORIZATION_ERROR",
+            "Authorization failed",
+            403,
         ),
     ],
 )

@@ -1,7 +1,10 @@
 """
-File: test_pandas_deserializer.py
-Description: Tests for PandasDeserializer covering formats and edge cases.
-Region: packages/shared
+**File:** ``test_pandas_deserializer.py``
+**Region:** ``tests/common/serde/deserialize``
+
+Description
+-----------
+Tests for `PandasDeserializer` covering formats and edge cases.
 """
 
 import io

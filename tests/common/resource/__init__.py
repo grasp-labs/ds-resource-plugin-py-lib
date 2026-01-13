@@ -1,5 +1,8 @@
 """
-File: __init__.py
-Description: Test package for ResourceClient
-Region: packages/shared
+**File:** ``__init__.py``
+**Region:** ``tests/common/resource``
+
+Description
+-----------
+Tests for resource-related modules.
 """

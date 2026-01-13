@@ -1,7 +1,10 @@
 """
-File: conftest.py
-Description: Shared pytest fixtures for resource client tests
-Region: packages/shared
+**File:** ``conftest.py``
+**Region:** ``tests``
+
+Description
+-----------
+Shared pytest fixtures for resource client tests.
 """
 
 import tempfile
