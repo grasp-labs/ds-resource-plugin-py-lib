@@ -12,7 +12,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Generic, NamedTuple, TypeVar
+from types import TracebackType
+from typing import Any, Generic, NamedTuple, Self, TypeVar
 
 import pandas as pd
 from ds_common_serde_py_lib import Serializable
@@ -95,6 +96,31 @@ class Dataset(
     next: bool | None = True
     cursor: str | None = None
 
+    def __enter__(self) -> Self:
+        """
+        Context manager enter.
+
+        Returns:
+            The dataset.
+        """
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """
+        Context manager exit.
+
+        Args:
+            exc_type: The type of the exception.
+            exc_value: The value of the exception.
+            traceback: The traceback of the exception.
+        """
+        self.close()
+
     @property
     @abstractmethod
     def kind(self) -> StrEnum:
@@ -167,6 +193,19 @@ class Dataset(
             The result of the rename method.
         """
         raise NotImplementedError("Method (move) not implemented")
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Close the dataset.
+
+        This method is called when the dataset is closed.
+        It is used to clean up the dataset and close the connection.
+
+        Returns:
+            None.
+        """
+        raise NotImplementedError("Method (close) not implemented")
 
 
 @dataclass(kw_only=True)
