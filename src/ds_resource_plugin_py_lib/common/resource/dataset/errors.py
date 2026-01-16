@@ -64,12 +64,12 @@ class InvalidDatasetClassError(DatasetException):
         super().__init__(message, code, status_code, details)
 
 
-class FileNotFoundError(DatasetException):
-    """Raised when file not found."""
+class NotFoundError(DatasetException):
+    """Raised when a resource is not found."""
 
     def __init__(
         self,
-        message: str = "File not found",
+        message: str = "Resource not found",
         code: str = "DS_DATASET_NOT_FOUND_ERROR",
         status_code: int = 404,
         details: dict[str, Any] | None = None,
@@ -90,13 +90,13 @@ class ReadError(DatasetException):
         super().__init__(message, code, status_code, details)
 
 
-class WriteError(DatasetException):
-    """Raised when a write operation fails."""
+class CreateError(DatasetException):
+    """Raised when a create operation fails."""
 
     def __init__(
         self,
-        message: str = "Write operation failed",
-        code: str = "DS_DATASET_WRITE_ERROR",
+        message: str = "Create operation failed",
+        code: str = "DS_DATASET_CREATE_ERROR",
         status_code: int = 500,
         details: dict[str, Any] | None = None,
     ) -> None:
@@ -123,6 +123,19 @@ class DeleteError(DatasetException):
         self,
         message: str = "Delete operation failed",
         code: str = "DS_DATASET_DELETE_ERROR",
+        status_code: int = 500,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)
+
+
+class RenameError(DatasetException):
+    """Raised when a rename operation fails."""
+
+    def __init__(
+        self,
+        message: str = "Rename operation failed",
+        code: str = "DS_DATASET_RENAME_ERROR",
         status_code: int = 500,
         details: dict[str, Any] | None = None,
     ) -> None:
