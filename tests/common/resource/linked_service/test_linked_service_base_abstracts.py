@@ -35,6 +35,9 @@ class _DummyLinkedService(LinkedService[_DummyProps]):
     def test_connection(self) -> tuple[bool, str]:
         return LinkedService.test_connection(self)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return LinkedService.close(self)  # type: ignore[misc]
+
 
 class TestLinkedServiceBaseAbstractBodies:
     def test_linked_service_base_abstracts_raise_not_implemented(self):
@@ -46,3 +49,5 @@ class TestLinkedServiceBaseAbstractBodies:
             ls.connect()
         with pytest.raises(NotImplementedError):
             ls.test_connection()
+        with pytest.raises(NotImplementedError):
+            ls.close()

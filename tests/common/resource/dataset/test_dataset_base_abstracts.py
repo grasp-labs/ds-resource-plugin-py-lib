@@ -38,6 +38,9 @@ class _DummyLinkedService(LinkedService[_DummyLinkedServiceProps]):
     def test_connection(self) -> tuple[bool, str]:
         return LinkedService.test_connection(self)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return LinkedService.close(self)  # type: ignore[misc]
+
 
 @dataclass(kw_only=True)
 class _DummyDatasetProps(DatasetTypedProperties):
@@ -69,6 +72,9 @@ class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetProps, DataSeriali
     def rename(self, **kwargs: Any) -> Any:
         return Dataset.rename(self, **kwargs)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return Dataset.close(self)  # type: ignore[misc]
+
 
 class TestDatasetBaseAbstractBodies:
     def test_dataset_base_abstracts_raise_not_implemented(self):
@@ -89,3 +95,5 @@ class TestDatasetBaseAbstractBodies:
             ds.update()
         with pytest.raises(NotImplementedError):
             ds.rename()
+        with pytest.raises(NotImplementedError):
+            ds.close()
