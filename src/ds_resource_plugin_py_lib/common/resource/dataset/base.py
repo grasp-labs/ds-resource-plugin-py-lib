@@ -55,15 +55,15 @@ class DatasetInfo(NamedTuple):
 
 
 @dataclass(kw_only=True)
-class DatasetTypedProperties(Serializable):
+class DatasetSettings(Serializable):
     """
-    The object containing the typed properties of the dataset.
+    The object containing the settings of the dataset.
     """
 
     pass
 
 
-DatasetTypedPropertiesType = TypeVar("DatasetTypedPropertiesType", bound=DatasetTypedProperties)
+DatasetSettingsType = TypeVar("DatasetSettingsType", bound=DatasetSettings)
 LinkedServiceType = TypeVar("LinkedServiceType", bound=LinkedService[Any])
 SerializerType = TypeVar("SerializerType", bound=DataSerializer)
 DeserializerType = TypeVar("DeserializerType", bound=DataDeserializer)
@@ -73,7 +73,7 @@ DeserializerType = TypeVar("DeserializerType", bound=DataDeserializer)
 class Dataset(
     ABC,
     Serializable,
-    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
+    Generic[LinkedServiceType, DatasetSettingsType, SerializerType, DeserializerType],
 ):
     """
     The ds workflow nested object which identifies data within a data store,
@@ -82,7 +82,7 @@ class Dataset(
     You probably want to use the subclasses and not this class directly.
     """
 
-    typed_properties: DatasetTypedPropertiesType
+    settings: DatasetSettingsType
     linked_service: LinkedServiceType
 
     serializer: SerializerType | None = None
@@ -91,7 +91,9 @@ class Dataset(
     post_fetch_callback: Callable[..., Any] | None = None
     prepare_write_callback: Callable[..., Any] | None = None
 
-    content: Any | None = None
+    input: Any | None = None
+    output: Any | None = None
+
     schema: dict[str, Any] | None = None
     next: bool | None = True
     cursor: str | None = None
@@ -210,34 +212,40 @@ class Dataset(
 
 @dataclass(kw_only=True)
 class BinaryDataset(
-    Dataset[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
-    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
+    Dataset[LinkedServiceType, DatasetSettingsType, SerializerType, DeserializerType],
+    Generic[LinkedServiceType, DatasetSettingsType, SerializerType, DeserializerType],
 ):
     """
     Binary dataset object which identifies data within a data store,
     such as files, folders and documents.
 
-    The content of the dataset is a binary file.
+    The input of the dataset is a binary file.
+    The output of the dataset is a binary file.
     """
 
-    content: io.BytesIO = field(default_factory=io.BytesIO)
+    input: io.BytesIO = field(default_factory=io.BytesIO)
+    output: io.BytesIO = field(default_factory=io.BytesIO)
+
     next: bool | None = True
     cursor: str | None = None
 
 
 @dataclass(kw_only=True)
 class TabularDataset(
-    Dataset[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
-    Generic[LinkedServiceType, DatasetTypedPropertiesType, SerializerType, DeserializerType],
+    Dataset[LinkedServiceType, DatasetSettingsType, SerializerType, DeserializerType],
+    Generic[LinkedServiceType, DatasetSettingsType, SerializerType, DeserializerType],
 ):
     """
     Tabular dataset object which identifies data within a data store,
     such as table/csv/json/parquet/parquetdataset/ and other documents.
 
-    The content of the dataset is a pandas DataFrame.
+    The input of the dataset is a pandas DataFrame.
+    The output of the dataset is a pandas DataFrame.
     """
 
+    input: pd.DataFrame = field(default_factory=pd.DataFrame)
+    output: pd.DataFrame = field(default_factory=pd.DataFrame)
+
     schema: dict[str, Any] | None = None
-    content: pd.DataFrame = field(default_factory=pd.DataFrame)
     next: bool | None = True
     cursor: str | None = None

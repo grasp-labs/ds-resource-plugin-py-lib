@@ -48,22 +48,22 @@ class LinkedServiceInfo(NamedTuple):
 
 
 @dataclass(kw_only=True)
-class LinkedServiceTypedProperties(Serializable):
+class LinkedServiceSettings(Serializable):
     """
-    Base class for linked service typed properties.
+    The object containing the settings of the linked service.
     """
 
     pass
 
 
-LinkedServiceTypedPropertiesType = TypeVar("LinkedServiceTypedPropertiesType", bound=LinkedServiceTypedProperties)
+LinkedServiceSettingsType = TypeVar("LinkedServiceSettingsType", bound=LinkedServiceSettings)
 
 
 @dataclass(kw_only=True)
 class LinkedService(
     ABC,
     Serializable,
-    Generic[LinkedServiceTypedPropertiesType],
+    Generic[LinkedServiceSettingsType],
 ):
     """
     The object containing the connection information to connect with related data store.
@@ -77,7 +77,7 @@ class LinkedService(
     All required parameters must be populated in the constructor in order to send to ds-workflow-service.
     """
 
-    typed_properties: LinkedServiceTypedPropertiesType
+    settings: LinkedServiceSettingsType
 
     def __enter__(self) -> Self:
         """

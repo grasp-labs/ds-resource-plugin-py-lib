@@ -7,10 +7,10 @@ Description
 Linked service models and typed properties.
 """
 
-from .base import LinkedService, LinkedServiceInfo, LinkedServiceTypedProperties
+from .base import LinkedService, LinkedServiceInfo, LinkedServiceSettings
 
 __all__ = [
     "LinkedService",
     "LinkedServiceInfo",
-    "LinkedServiceTypedProperties",
+    "LinkedServiceSettings",
 ]
