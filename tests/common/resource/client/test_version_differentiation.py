@@ -160,7 +160,7 @@ class TestVersionDifferentiation:
         config = {
             "kind": "DS.RESOURCE.DATASET.HTTP",
             "version": "1.0.0",
-            "typed_properties": {"url": "https://example.com"},
+            "settings": {"url": "https://example.com"},
         }
 
         # Execute
@@ -199,7 +199,7 @@ class TestVersionDifferentiation:
         client = ResourceClient()
         config = {
             "kind": "DS.RESOURCE.DATASET.HTTP",
-            "typed_properties": {"url": "https://example.com"},
+            "settings": {"url": "https://example.com"},
         }
 
         with pytest.raises(DeserializationError) as exc_info:
