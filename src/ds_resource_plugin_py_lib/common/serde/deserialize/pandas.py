@@ -52,7 +52,7 @@ class PandasDeserializer(DataDeserializer):
         elif isinstance(value, str):
             value = io.StringIO(value)
         elif isinstance(value, (dict, list)):
-            value = json.dumps(value)
+            value = io.StringIO(json.dumps(value))
 
         format_readers: dict[DatasetStorageFormatType, Callable[[Any], pd.DataFrame]] = {
             DatasetStorageFormatType.CSV: lambda v: pd.read_csv(v, **self.kwargs),
