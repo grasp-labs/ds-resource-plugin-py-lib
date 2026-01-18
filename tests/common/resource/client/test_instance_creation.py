@@ -133,7 +133,6 @@ class TestInstanceCreation:
         # Execute & Assert
         with pytest.raises(DeserializationError) as exc_info:
             client.dataset(config)
-        print(exc_info.value.details.get("error", ""))
         assert "kind" in str(exc_info.value.details.get("error", ""))
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
