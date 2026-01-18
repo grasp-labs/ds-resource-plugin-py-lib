@@ -10,15 +10,16 @@ Tests for dataset error types ensuring codes, status, and messages are preserved
 import pytest
 
 from ds_resource_plugin_py_lib.common.resource.dataset.errors import (
+    CreateError,
     DatasetException,
     DeleteError,
-    FileNotFoundError,
     InvalidDatasetClassError,
     MismatchedLinkedServiceError,
+    NotFoundError,
     ReadError,
+    RenameError,
     UnsupportedDatasetTypeError,
     UpdateError,
-    WriteError,
 )
 
 
@@ -29,11 +30,12 @@ from ds_resource_plugin_py_lib.common.resource.dataset.errors import (
         (MismatchedLinkedServiceError, "DS_DATASET_LINKED_SERVICE_MISMATCHED_ERROR", 400, "Mismatched linked service"),
         (UnsupportedDatasetTypeError, "DS_DATASET_UNSUPPORTED_TYPE_ERROR", 400, "Dataset type is not supported"),
         (InvalidDatasetClassError, "DS_DATASET_INVALID_CLASS_ERROR", 400, "Invalid dataset type"),
-        (FileNotFoundError, "DS_DATASET_NOT_FOUND_ERROR", 404, "File not found"),
-        (WriteError, "DS_DATASET_WRITE_ERROR", 500, "Write operation failed"),
+        (NotFoundError, "DS_DATASET_NOT_FOUND_ERROR", 404, "Resource not found"),
+        (CreateError, "DS_DATASET_CREATE_ERROR", 500, "Create operation failed"),
         (UpdateError, "DS_DATASET_UPDATE_ERROR", 500, "Update operation failed"),
         (DeleteError, "DS_DATASET_DELETE_ERROR", 500, "Delete operation failed"),
         (ReadError, "DS_DATASET_READ_ERROR", 500, "Read operation failed"),
+        (RenameError, "DS_DATASET_RENAME_ERROR", 500, "Rename operation failed"),
     ],
 )
 def test_dataset_exception_defaults(exc_cls, expected_code, expected_status, expected_message):

@@ -7,6 +7,7 @@ Description
 Tests for `PandasSerializer` covering supported formats and validation.
 """
 
+import io
 from typing import cast
 from unittest.mock import patch
 
@@ -42,7 +43,7 @@ class TestPandasSerializer:
 
         json_string = serializer(sample_dataframe)
 
-        loaded = pd.read_json(json_string)
+        loaded = pd.read_json(io.StringIO(json_string))
         assert len(loaded) == len(sample_dataframe)
 
     def test_excel_uses_default_float_format(self, sample_dataframe):

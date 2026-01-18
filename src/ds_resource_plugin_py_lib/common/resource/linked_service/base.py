@@ -10,7 +10,8 @@ Base models for linked services.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Generic, NamedTuple, TypeVar
+from types import TracebackType
+from typing import Any, Generic, NamedTuple, Self, TypeVar
 
 from ds_common_serde_py_lib import Serializable
 
@@ -47,22 +48,22 @@ class LinkedServiceInfo(NamedTuple):
 
 
 @dataclass(kw_only=True)
-class LinkedServiceTypedProperties(Serializable):
+class LinkedServiceSettings(Serializable):
     """
-    Base class for linked service typed properties.
+    The object containing the settings of the linked service.
     """
 
     pass
 
 
-LinkedServiceTypedPropertiesType = TypeVar("LinkedServiceTypedPropertiesType", bound=LinkedServiceTypedProperties)
+LinkedServiceSettingsType = TypeVar("LinkedServiceSettingsType", bound=LinkedServiceSettings)
 
 
 @dataclass(kw_only=True)
 class LinkedService(
     ABC,
     Serializable,
-    Generic[LinkedServiceTypedPropertiesType],
+    Generic[LinkedServiceSettingsType],
 ):
     """
     The object containing the connection information to connect with related data store.
@@ -76,7 +77,32 @@ class LinkedService(
     All required parameters must be populated in the constructor in order to send to ds-workflow-service.
     """
 
-    typed_properties: LinkedServiceTypedPropertiesType
+    settings: LinkedServiceSettingsType
+
+    def __enter__(self) -> Self:
+        """
+        Context manager enter.
+
+        Returns:
+            The linked service.
+        """
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        """
+        Context manager exit.
+
+        Args:
+            exc_type: The type of the exception.
+            exc_value: The value of the exception.
+            traceback: The traceback of the exception.
+        """
+        self.close()
 
     @property
     @abstractmethod
@@ -109,3 +135,13 @@ class LinkedService(
             connection is successful and a string containing the error message.
         """
         raise NotImplementedError("test_connection method is not implemented")
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Close the linked service.
+
+        Returns:
+            None.
+        """
+        raise NotImplementedError("close method is not implemented")

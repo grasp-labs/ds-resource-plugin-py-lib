@@ -12,17 +12,17 @@ from typing import Any
 
 import pytest
 
-from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService, LinkedServiceTypedProperties
+from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService, LinkedServiceSettings
 
 
 @dataclass(kw_only=True)
-class _DummyProps(LinkedServiceTypedProperties):
+class _DummySettings(LinkedServiceSettings):
     pass
 
 
 @dataclass(kw_only=True)
-class _DummyLinkedService(LinkedService[_DummyProps]):
-    typed_properties: _DummyProps
+class _DummyLinkedService(LinkedService[_DummySettings]):
+    settings: _DummySettings
 
     @property
     def kind(self):  # type: ignore[override]
@@ -35,10 +35,13 @@ class _DummyLinkedService(LinkedService[_DummyProps]):
     def test_connection(self) -> tuple[bool, str]:
         return LinkedService.test_connection(self)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return LinkedService.close(self)  # type: ignore[misc]
+
 
 class TestLinkedServiceBaseAbstractBodies:
     def test_linked_service_base_abstracts_raise_not_implemented(self):
-        ls = _DummyLinkedService(typed_properties=_DummyProps())
+        ls = _DummyLinkedService(settings=_DummySettings())
 
         with pytest.raises(NotImplementedError):
             _ = ls.kind
@@ -46,3 +49,5 @@ class TestLinkedServiceBaseAbstractBodies:
             ls.connect()
         with pytest.raises(NotImplementedError):
             ls.test_connection()
+        with pytest.raises(NotImplementedError):
+            ls.close()

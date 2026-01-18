@@ -8,24 +8,25 @@ Cover base `Dataset` abstract-method NotImplementedError bodies.
 """
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import pytest
 
-from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset, DatasetTypedProperties
-from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService, LinkedServiceTypedProperties
+from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset, DatasetSettings
+from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService, LinkedServiceSettings
 from ds_resource_plugin_py_lib.common.serde.deserialize.base import DataDeserializer
 from ds_resource_plugin_py_lib.common.serde.serialize.base import DataSerializer
 
 
 @dataclass(kw_only=True)
-class _DummyLinkedServiceProps(LinkedServiceTypedProperties):
+class _DummyLinkedServiceSettings(LinkedServiceSettings):
     pass
 
 
 @dataclass(kw_only=True)
-class _DummyLinkedService(LinkedService[_DummyLinkedServiceProps]):
-    typed_properties: _DummyLinkedServiceProps
+class _DummyLinkedService(LinkedService[_DummyLinkedServiceSettings]):
+    settings: _DummyLinkedServiceSettings
 
     @property
     def kind(self):  # type: ignore[override]
@@ -38,19 +39,22 @@ class _DummyLinkedService(LinkedService[_DummyLinkedServiceProps]):
     def test_connection(self) -> tuple[bool, str]:
         return LinkedService.test_connection(self)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return LinkedService.close(self)  # type: ignore[misc]
+
 
 @dataclass(kw_only=True)
-class _DummyDatasetProps(DatasetTypedProperties):
+class _DummyDatasetSettings(DatasetSettings):
     pass
 
 
 @dataclass(kw_only=True)
-class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetProps, DataSerializer, DataDeserializer]):
-    typed_properties: _DummyDatasetProps
+class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetSettings, DataSerializer, DataDeserializer]):
+    settings: _DummyDatasetSettings
     linked_service: _DummyLinkedService
 
     @property
-    def kind(self) -> str:
+    def kind(self) -> StrEnum:
         # Exercise base property body (raises NotImplementedError).
         return Dataset.kind.fget(self)  # type: ignore[misc]
 
@@ -69,12 +73,15 @@ class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetProps, DataSeriali
     def rename(self, **kwargs: Any) -> Any:
         return Dataset.rename(self, **kwargs)  # type: ignore[misc]
 
+    def close(self) -> None:
+        return Dataset.close(self)  # type: ignore[misc]
+
 
 class TestDatasetBaseAbstractBodies:
     def test_dataset_base_abstracts_raise_not_implemented(self):
         ds = _DummyDataset(
-            typed_properties=_DummyDatasetProps(),
-            linked_service=_DummyLinkedService(typed_properties=_DummyLinkedServiceProps()),
+            settings=_DummyDatasetSettings(),
+            linked_service=_DummyLinkedService(settings=_DummyLinkedServiceSettings()),
         )
 
         with pytest.raises(NotImplementedError):
@@ -89,3 +96,5 @@ class TestDatasetBaseAbstractBodies:
             ds.update()
         with pytest.raises(NotImplementedError):
             ds.rename()
+        with pytest.raises(NotImplementedError):
+            ds.close()

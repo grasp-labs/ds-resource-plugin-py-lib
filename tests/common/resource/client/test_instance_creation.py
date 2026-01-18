@@ -53,7 +53,7 @@ class TestInstanceCreation:
         config = {
             "kind": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
             "version": "1.0.0",
-            "typed_properties": {"url": "https://example.com/graphql"},
+            "settings": {"url": "https://example.com/graphql"},
         }
 
         # Execute
@@ -97,7 +97,7 @@ class TestInstanceCreation:
         config = {
             "kind": "DS.RESOURCE.DATASET.GRAPHQL",
             "version": "1.0.0",
-            "typed_properties": {"query": "query { users { id } }"},
+            "settings": {"query": "query { users { id } }"},
         }
 
         # Execute
@@ -114,7 +114,7 @@ class TestInstanceCreation:
         mock_entry_points.return_value = []
         client = ResourceClient()
 
-        config = {"version": "1.0.0", "typed_properties": {"url": "https://example.com"}}
+        config = {"version": "1.0.0", "settings": {"url": "https://example.com"}}
 
         # Execute & Assert
         with pytest.raises(DeserializationError) as exc_info:
@@ -128,7 +128,7 @@ class TestInstanceCreation:
         mock_entry_points.return_value = []
         client = ResourceClient()
 
-        config = {"version": "1.0.0", "typed_properties": {"query": "query { users }"}}
+        config = {"version": "1.0.0", "settings": {"query": "query { users }"}}
 
         # Execute & Assert
         with pytest.raises(DeserializationError) as exc_info:
@@ -196,7 +196,7 @@ class TestInstanceCreation:
         config = {
             "kind": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
             "version": "1.0.0",
-            "typed_properties": {"invalid": "data"},
+            "settings": {"invalid": "data"},
         }
 
         # Execute & Assert
@@ -240,7 +240,7 @@ class TestInstanceCreation:
         config = {
             "kind": "DS.RESOURCE.DATASET.GRAPHQL",
             "version": "1.0.0",
-            "typed_properties": {"invalid": "data"},
+            "settings": {"invalid": "data"},
         }
 
         # Execute & Assert

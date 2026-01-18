@@ -39,7 +39,7 @@ class TestPandasDeserializer:
 
         result = deserializer(json_string)
 
-        expected = pd.read_json(json_string)
+        expected = pd.read_json(io.StringIO(json_string))
         assert_frame_equal(result.reset_index(drop=True), expected)
 
     def test_semi_structured_json_normalization(self, semi_structured_json):

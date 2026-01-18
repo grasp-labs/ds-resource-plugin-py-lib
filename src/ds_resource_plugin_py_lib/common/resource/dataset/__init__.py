@@ -7,14 +7,14 @@ Description
 Dataset models, typed properties, and storage format helpers.
 """
 
-from .base import Dataset, DatasetInfo, DatasetTypedProperties, TabularDataset
+from .base import Dataset, DatasetInfo, DatasetSettings, TabularDataset
 from .storage_format import DatasetStorageFormat, DatasetStorageFormatType
 
 __all__ = [
     "Dataset",
     "DatasetInfo",
+    "DatasetSettings",
     "DatasetStorageFormat",
     "DatasetStorageFormatType",
-    "DatasetTypedProperties",
     "TabularDataset",
 ]
