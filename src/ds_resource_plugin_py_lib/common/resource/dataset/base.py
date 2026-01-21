@@ -28,7 +28,7 @@ class DatasetInfo(NamedTuple):
     NamedTuple that represents the dataset information.
     """
 
-    kind: str
+    type: str
     name: str
     class_name: str
     version: str
@@ -41,17 +41,17 @@ class DatasetInfo(NamedTuple):
         Returns:
             A string representation of the dataset info.
         """
-        return f"{self.kind}:v{self.version}"
+        return f"{self.type}:v{self.version}"
 
     @property
     def key(self) -> tuple[str, str]:
         """
-        Return the composite key (kind, version) for dictionary lookups.
+        Return the composite key (type, version) for dictionary lookups.
 
         Returns:
-            A tuple containing the kind and version.
+            A tuple containing the type and version.
         """
-        return (self.kind, self.version)
+        return (self.type, self.version)
 
 
 @dataclass(kw_only=True)
@@ -125,11 +125,11 @@ class Dataset(
 
     @property
     @abstractmethod
-    def kind(self) -> StrEnum:
+    def type(self) -> StrEnum:
         """
-        Get the kind of the dataset.
+        Get the type of the dataset.
         """
-        raise NotImplementedError("Method (kind) not implemented")
+        raise NotImplementedError("Method (type) not implemented")
 
     @abstractmethod
     def create(self, **kwargs: Any) -> Any:

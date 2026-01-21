@@ -29,9 +29,9 @@ class _DummyLinkedService(LinkedService[_DummyLinkedServiceSettings]):
     settings: _DummyLinkedServiceSettings
 
     @property
-    def kind(self):  # type: ignore[override]
+    def type(self):  # type: ignore[override]
         # Exercise base property body (raises NotImplementedError).
-        return LinkedService.kind.fget(self)  # type: ignore[misc]
+        return LinkedService.type.fget(self)  # type: ignore[misc]
 
     def connect(self) -> Any:
         return LinkedService.connect(self)  # type: ignore[misc]
@@ -54,9 +54,9 @@ class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetSettings, DataSeri
     linked_service: _DummyLinkedService
 
     @property
-    def kind(self) -> StrEnum:
+    def type(self) -> StrEnum:
         # Exercise base property body (raises NotImplementedError).
-        return Dataset.kind.fget(self)  # type: ignore[misc]
+        return Dataset.type.fget(self)  # type: ignore[misc]
 
     def create(self, **kwargs: Any) -> Any:
         return Dataset.create(self, **kwargs)  # type: ignore[misc]
@@ -85,7 +85,7 @@ class TestDatasetBaseAbstractBodies:
         )
 
         with pytest.raises(NotImplementedError):
-            _ = ds.kind
+            _ = ds.type
         with pytest.raises(NotImplementedError):
             ds.create()
         with pytest.raises(NotImplementedError):

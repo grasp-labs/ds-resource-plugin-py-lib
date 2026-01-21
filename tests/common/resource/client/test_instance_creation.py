@@ -51,7 +51,7 @@ class TestInstanceCreation:
         client = ResourceClient()
 
         config = {
-            "kind": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
+            "type": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
             "version": "1.0.0",
             "settings": {"url": "https://example.com/graphql"},
         }
@@ -95,7 +95,7 @@ class TestInstanceCreation:
         client = ResourceClient()
 
         config = {
-            "kind": "DS.RESOURCE.DATASET.GRAPHQL",
+            "type": "DS.RESOURCE.DATASET.GRAPHQL",
             "version": "1.0.0",
             "settings": {"query": "query { users { id } }"},
         }
@@ -108,8 +108,8 @@ class TestInstanceCreation:
         mock_dataset_class.deserialize.assert_called_once_with(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
-    def test_linked_service_missing_kind(self, mock_entry_points):
-        """Test error handling when kind is missing."""
+    def test_linked_service_missing_type(self, mock_entry_points):
+        """Test error handling when type is missing."""
         # Setup
         mock_entry_points.return_value = []
         client = ResourceClient()
@@ -119,11 +119,11 @@ class TestInstanceCreation:
         # Execute & Assert
         with pytest.raises(DeserializationError) as exc_info:
             client.linked_service(config)
-        assert "kind" in str(exc_info.value.details.get("error", ""))
+        assert "type" in str(exc_info.value.details.get("error", ""))
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
-    def test_dataset_missing_kind(self, mock_entry_points):
-        """Test error handling when kind is missing."""
+    def test_dataset_missing_type(self, mock_entry_points):
+        """Test error handling when type is missing."""
         # Setup
         mock_entry_points.return_value = []
         client = ResourceClient()
@@ -133,29 +133,29 @@ class TestInstanceCreation:
         # Execute & Assert
         with pytest.raises(DeserializationError) as exc_info:
             client.dataset(config)
-        assert "kind" in str(exc_info.value.details.get("error", ""))
+        assert "type" in str(exc_info.value.details.get("error", ""))
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
-    def test_linked_service_unknown_kind(self, mock_entry_points):
-        """Test error handling when kind is not found."""
+    def test_linked_service_unknown_type(self, mock_entry_points):
+        """Test error handling when type is not found."""
         # Setup
         mock_entry_points.return_value = []
         client = ResourceClient()
 
-        config = {"kind": "DS.RESOURCE.LINKED_SERVICE.UNKNOWN", "version": "1.0.0"}
+        config = {"type": "DS.RESOURCE.LINKED_SERVICE.UNKNOWN", "version": "1.0.0"}
 
         # Execute & Assert
         with pytest.raises(DeserializationError):
             client.linked_service(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
-    def test_dataset_unknown_kind(self, mock_entry_points):
-        """Test error handling when kind is not found."""
+    def test_dataset_unknown_type(self, mock_entry_points):
+        """Test error handling when type is not found."""
         # Setup
         mock_entry_points.return_value = []
         client = ResourceClient()
 
-        config = {"kind": "DS.RESOURCE.DATASET.UNKNOWN", "version": "1.0.0"}
+        config = {"type": "DS.RESOURCE.DATASET.UNKNOWN", "version": "1.0.0"}
 
         # Execute & Assert
         with pytest.raises(DeserializationError):
@@ -194,7 +194,7 @@ class TestInstanceCreation:
         client = ResourceClient()
 
         config = {
-            "kind": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
+            "type": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
             "version": "1.0.0",
             "settings": {"invalid": "data"},
         }
@@ -238,7 +238,7 @@ class TestInstanceCreation:
         client = ResourceClient()
 
         config = {
-            "kind": "DS.RESOURCE.DATASET.GRAPHQL",
+            "type": "DS.RESOURCE.DATASET.GRAPHQL",
             "version": "1.0.0",
             "settings": {"invalid": "data"},
         }

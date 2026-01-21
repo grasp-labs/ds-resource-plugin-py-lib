@@ -21,7 +21,7 @@ class LinkedServiceInfo(NamedTuple):
     NamedTuple that represents the linked service information.
     """
 
-    kind: str
+    type: str
     name: str
     class_name: str
     version: str
@@ -34,17 +34,17 @@ class LinkedServiceInfo(NamedTuple):
         Returns:
             A string representation of the linked service info.
         """
-        return f"{self.kind}:v{self.version}"
+        return f"{self.type}:v{self.version}"
 
     @property
     def key(self) -> tuple[str, str]:
         """
-        Return the composite key (kind, version) for dictionary lookups.
+        Return the composite key (type, version) for dictionary lookups.
 
         Returns:
-            A tuple containing the kind and version.
+            A tuple containing the type and version.
         """
-        return (self.kind, self.version)
+        return (self.type, self.version)
 
 
 @dataclass(kw_only=True)
@@ -106,14 +106,14 @@ class LinkedService(
 
     @property
     @abstractmethod
-    def kind(self) -> StrEnum:
+    def type(self) -> StrEnum:
         """
-        Get the kind of the linked service.
+        Get the type of the linked service.
 
         Returns:
-            The kind of the linked service.
+            The type of the linked service.
         """
-        raise NotImplementedError("kind property is not implemented")
+        raise NotImplementedError("type property is not implemented")
 
     @abstractmethod
     def connect(self) -> Any:

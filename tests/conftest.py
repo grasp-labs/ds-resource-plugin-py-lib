@@ -35,7 +35,7 @@ def graphql_resource_yaml():
         "dataset": [
             {
                 "name": "GRAPHQL",
-                "kind": "DS.RESOURCE.DATASET.GRAPHQL",
+                "type": "DS.RESOURCE.DATASET.GRAPHQL",
                 "version": "1.0.0",
                 "description": "GRAPHQL dataset",
                 "class_name": "ds_protocol_graphql_py_lib.dataset.graphql.GraphQLDataset",
@@ -44,7 +44,7 @@ def graphql_resource_yaml():
         "linked_service": [
             {
                 "name": "GRAPHQL",
-                "kind": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
+                "type": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
                 "version": "1.0.0",
                 "description": "GRAPHQL linked service",
                 "class_name": "ds_protocol_graphql_py_lib.linked_service.graphql.GraphQLLinkedService",
@@ -63,14 +63,14 @@ def http_resource_yaml():
         "dataset": [
             {
                 "name": "HTTP",
-                "kind": "DS.RESOURCE.DATASET.HTTP",
+                "type": "DS.RESOURCE.DATASET.HTTP",
                 "version": "1.0.0",
                 "description": "HTTP dataset",
                 "class_name": "ds_protocol_http_py_lib.dataset.http.HttpDataset",
             },
             {
                 "name": "HTTP",
-                "kind": "DS.RESOURCE.DATASET.HTTP",
+                "type": "DS.RESOURCE.DATASET.HTTP",
                 "version": "2.0.0",
                 "description": "HTTP dataset",
                 "class_name": "ds_protocol_http_py_lib.dataset.httpV2.HttpDataset",
@@ -79,7 +79,7 @@ def http_resource_yaml():
         "linked_service": [
             {
                 "name": "HTTP",
-                "kind": "DS.RESOURCE.LINKED_SERVICE.HTTP",
+                "type": "DS.RESOURCE.LINKED_SERVICE.HTTP",
                 "version": "1.0.0",
                 "description": "HTTP linked service",
                 "class_name": "ds_protocol_http_py_lib.linked_service.http.HttpLinkedService",

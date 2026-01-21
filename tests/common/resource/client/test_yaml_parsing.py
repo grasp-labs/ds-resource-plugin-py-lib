@@ -133,7 +133,7 @@ class TestYAMLParsing:
         # Assert
         assert ("DS.RESOURCE.LINKED_SERVICE.GRAPHQL", "1.0.0") in client.linked_services
         linked_service = client.linked_services[("DS.RESOURCE.LINKED_SERVICE.GRAPHQL", "1.0.0")]
-        assert linked_service.kind == "DS.RESOURCE.LINKED_SERVICE.GRAPHQL"
+        assert linked_service.type == "DS.RESOURCE.LINKED_SERVICE.GRAPHQL"
         assert linked_service.name == "GRAPHQL"
         assert linked_service.version == "1.0.0"
         assert linked_service.class_name == "ds_protocol_graphql_py_lib.linked_service.graphql.GraphQLLinkedService"
@@ -162,7 +162,7 @@ class TestYAMLParsing:
         # Assert
         assert ("DS.RESOURCE.DATASET.GRAPHQL", "1.0.0") in client.datasets
         dataset = client.datasets[("DS.RESOURCE.DATASET.GRAPHQL", "1.0.0")]
-        assert dataset.kind == "DS.RESOURCE.DATASET.GRAPHQL"
+        assert dataset.type == "DS.RESOURCE.DATASET.GRAPHQL"
         assert dataset.name == "GRAPHQL"
         assert dataset.version == "1.0.0"
         assert dataset.class_name == "ds_protocol_graphql_py_lib.dataset.graphql.GraphQLDataset"

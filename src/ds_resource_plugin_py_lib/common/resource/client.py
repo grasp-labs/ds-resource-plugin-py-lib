@@ -19,8 +19,8 @@ Example
     print(client.linked_services.keys())
     print(client.datasets.keys())
 
-    dataset = client.dataset(config={"kind": "dataset.example", "version": "1.0.0"})
-    linked_service = client.linked_service(config={"kind": "linked_service.example", "version": "1.0.0"})
+    dataset = client.dataset(config={"type": "dataset.example", "version": "1.0.0"})
+    linked_service = client.linked_service(config={"type": "linked_service.example", "version": "1.0.0"})
 
     print(linked_service.connect())
     print(dataset.read())
@@ -154,16 +154,16 @@ class ResourceClient(LoggingMixin):
         for service in linked_services:
             service_name = service.get("name")
             if service_name:
-                kind = service.get("kind")
+                type = service.get("type")
                 version = service.get("version", "1.0.0")
                 service_info = LinkedServiceInfo(
-                    kind=kind,
+                    type=type,
                     name=service_name,
                     class_name=service.get("class_name"),
                     version=version,
                     description=service.get("description"),
                 )
-                # Store by composite key (kind, version) to support multiple versions
+                # Store by composite key (type, version) to support multiple versions
                 self._linked_services[service_info.key] = service_info
 
     def _parse_datasets(self, config: dict[str, Any]) -> None:
@@ -177,10 +177,10 @@ class ResourceClient(LoggingMixin):
         for dataset in datasets:
             dataset_name = dataset.get("name")
             if dataset_name:
-                kind = dataset.get("kind")
+                type = dataset.get("type")
                 version = dataset.get("version", "1.0.0")
                 dataset_info = DatasetInfo(
-                    kind=kind,
+                    type=type,
                     name=dataset_name,
                     class_name=dataset.get("class_name"),
                     version=version,
@@ -188,31 +188,31 @@ class ResourceClient(LoggingMixin):
                 )
                 self._datasets[dataset_info.key] = dataset_info
 
-    def _get_dataset_model_cls(self, kind: str, version: str) -> type[Dataset[Any, Any, Any, Any]]:
+    def _get_dataset_model_cls(self, _type: str, version: str) -> type[Dataset[Any, Any, Any, Any]]:
         """
-        Get a dataset model class by kind and optionally version.
+        Get a dataset model class by type and optionally version.
 
         Args:
-            kind: str
+            _type: str
             version: str
         Returns:
             Type[Dataset]
         """
-        cls_name = self.datasets[(kind, version)].class_name
+        cls_name = self.datasets[(_type, version)].class_name
         self.log.debug("Dataset Class Name: %s", cls_name)
         return cast("type[Dataset[Any, Any, Any, Any]]", import_string(cls_name))
 
-    def _get_linked_service_model_cls(self, kind: str, version: str) -> type[LinkedService[Any]]:
+    def _get_linked_service_model_cls(self, _type: str, version: str) -> type[LinkedService[Any]]:
         """
-        Get a linked service model class by kind and version.
+        Get a linked service model class by type and version.
 
         Args:
-            kind: The kind of the linked service.
+            _type: The type of the linked service.
             version: str version of the linked service.
         Returns:
             Type[LinkedService]
         """
-        cls_name = self.linked_services[(kind, version)].class_name
+        cls_name = self.linked_services[(_type, version)].class_name
         self.log.debug("Linked Service Class Name: %s", cls_name)
         return cast("type[LinkedService[Any]]", import_string(cls_name))
 
@@ -221,16 +221,16 @@ class ResourceClient(LoggingMixin):
         Get a linked service instance by configuration.
 
         Args:
-            config: dict containing at least 'kind' and 'version'
+            config: dict containing at least 'type' and 'version'
         Returns:
             LinkedService
         Raises:
             DeserializationError: If the linked service cannot be deserialized.
         """
         try:
-            kind = config["kind"]
+            type = config["type"]
             version = config["version"]
-            model_cls = self._get_linked_service_model_cls(kind, version)
+            model_cls = self._get_linked_service_model_cls(type, version)
             linked_service: LinkedService[Any] = model_cls.deserialize(config)
             return linked_service
         except (TypeError, KeyError) as exc:
@@ -245,16 +245,16 @@ class ResourceClient(LoggingMixin):
         Get a dataset instance by configuration.
 
         Args:
-            config: dict containing at least 'kind' and 'version'
+            config: dict containing at least 'type' and 'version'
         Returns:
             Dataset
         Raises:
             DeserializationError: If the dataset cannot be deserialized.
         """
         try:
-            kind = config["kind"]
+            type = config["type"]
             version = config["version"]
-            dataset_cls = self._get_dataset_model_cls(kind, version)
+            dataset_cls = self._get_dataset_model_cls(type, version)
             dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset
         except (TypeError, KeyError) as exc:

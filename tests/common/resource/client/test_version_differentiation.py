@@ -23,7 +23,7 @@ class TestVersionDifferentiation:
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
     def test_multiple_dataset_versions(self, mock_import_module, mock_entry_points, temp_dir, http_resource_yaml):
-        """Test parsing resource.yaml with multiple dataset versions (same kind, different versions)."""
+        """Test parsing resource.yaml with multiple dataset versions (same type, different versions)."""
         # Setup
         ep = Mock()
         ep.name = "http"
@@ -42,7 +42,7 @@ class TestVersionDifferentiation:
         client = ResourceClient()
 
         # Assert
-        # Both versions should be stored with composite keys (kind, version)
+        # Both versions should be stored with composite keys (type, version)
         assert ("DS.RESOURCE.DATASET.HTTP", "1.0.0") in client.datasets
         assert ("DS.RESOURCE.DATASET.HTTP", "2.0.0") in client.datasets
 
@@ -93,7 +93,7 @@ class TestVersionDifferentiation:
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
     def test_both_versions_stored(self, mock_import_module, mock_entry_points, temp_dir, http_resource_yaml):
-        """Test that when multiple versions share same kind, both are stored with composite keys."""
+        """Test that when multiple versions share same type, both are stored with composite keys."""
         # Setup
         ep = Mock()
         ep.name = "http"
@@ -158,7 +158,7 @@ class TestVersionDifferentiation:
 
         # Config specifies version 1.0.0, so it should use that version
         config = {
-            "kind": "DS.RESOURCE.DATASET.HTTP",
+            "type": "DS.RESOURCE.DATASET.HTTP",
             "version": "1.0.0",
             "settings": {"url": "https://example.com"},
         }
@@ -198,7 +198,7 @@ class TestVersionDifferentiation:
 
         client = ResourceClient()
         config = {
-            "kind": "DS.RESOURCE.DATASET.HTTP",
+            "type": "DS.RESOURCE.DATASET.HTTP",
             "settings": {"url": "https://example.com"},
         }
 
