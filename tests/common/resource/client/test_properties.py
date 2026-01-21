@@ -49,7 +49,7 @@ class TestPropertiesAndState:
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
     def test_linked_services_property(self, mock_import_module, mock_entry_points, temp_dir, graphql_resource_yaml):
-        """Test that linked_services property returns correct dictionary keyed by (kind, version)."""
+        """Test that linked_services property returns correct dictionary keyed by (type, version)."""
         # Setup
         ep = Mock()
         ep.name = "graphql"
@@ -76,7 +76,7 @@ class TestPropertiesAndState:
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
     def test_datasets_property(self, mock_import_module, mock_entry_points, temp_dir, graphql_resource_yaml):
-        """Test that datasets property returns correct dictionary keyed by (kind, version)."""
+        """Test that datasets property returns correct dictionary keyed by (type, version)."""
         # Setup
         ep = Mock()
         ep.name = "graphql"

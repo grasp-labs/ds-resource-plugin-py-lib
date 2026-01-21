@@ -25,9 +25,9 @@ class _DummyLinkedService(LinkedService[_DummySettings]):
     settings: _DummySettings
 
     @property
-    def kind(self):  # type: ignore[override]
+    def type(self):  # type: ignore[override]
         # Exercise base property body (raises NotImplementedError).
-        return LinkedService.kind.fget(self)  # type: ignore[misc]
+        return LinkedService.type.fget(self)  # type: ignore[misc]
 
     def connect(self) -> Any:
         return LinkedService.connect(self)  # type: ignore[misc]
@@ -44,7 +44,7 @@ class TestLinkedServiceBaseAbstractBodies:
         ls = _DummyLinkedService(settings=_DummySettings())
 
         with pytest.raises(NotImplementedError):
-            _ = ls.kind
+            _ = ls.type
         with pytest.raises(NotImplementedError):
             ls.connect()
         with pytest.raises(NotImplementedError):
