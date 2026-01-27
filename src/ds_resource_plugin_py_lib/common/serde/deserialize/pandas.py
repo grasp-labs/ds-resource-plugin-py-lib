@@ -49,7 +49,7 @@ class PandasDeserializer(DataDeserializer):
         Returns:
             A pandas DataFrame.
         """
-        logger.info(f"PandasDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
+        logger.debug(f"PandasDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
 
         if isinstance(value, bytes):
             value = io.BytesIO(value)

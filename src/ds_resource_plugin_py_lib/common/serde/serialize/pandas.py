@@ -46,7 +46,7 @@ class PandasSerializer(DataSerializer):
         Returns:
             A value.
         """
-        logger.info(f"PandasSerializer __call__ with format: {self.format} and args: {self.kwargs}")
+        logger.debug(f"PandasSerializer __call__ with format: {self.format} and args: {self.kwargs}")
         if not isinstance(obj, pd.DataFrame):
             raise TypeError(f"Expected pd.DataFrame, got {type(obj)}")
         value = obj
