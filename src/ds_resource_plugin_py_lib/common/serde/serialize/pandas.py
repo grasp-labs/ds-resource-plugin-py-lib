@@ -24,9 +24,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
+from ds_common_logger_py_lib import Logger
 
 from ...resource.dataset.storage_format import DatasetStorageFormatType
 from .base import DataSerializer
+
+logger = Logger.get_logger(__name__, package=True)
 
 
 @dataclass(kw_only=True)
@@ -43,7 +46,7 @@ class PandasSerializer(DataSerializer):
         Returns:
             A value.
         """
-        self.log.info(f"PandasSerializer __call__ with format: {self.format} and args: {self.kwargs}")
+        logger.info(f"PandasSerializer __call__ with format: {self.format} and args: {self.kwargs}")
         if not isinstance(obj, pd.DataFrame):
             raise TypeError(f"Expected pd.DataFrame, got {type(obj)}")
         value = obj
