@@ -22,7 +22,7 @@ from typing import Any
 
 from ds_common_logger_py_lib import Logger
 
-logger = Logger.get_logger(__name__)
+logger = Logger.get_logger(__name__, package=True)
 
 
 def import_string(dotted_path: str) -> Any:
@@ -36,7 +36,7 @@ def import_string(dotted_path: str) -> Any:
 
     Raise ImportError if the import failed.
     """
-    logger.info("Importing string: %s", dotted_path)
+    logger.debug("Importing string: %s", dotted_path)
     try:
         module_path, class_name = dotted_path.rsplit(".", 1)
     except ValueError as exc:

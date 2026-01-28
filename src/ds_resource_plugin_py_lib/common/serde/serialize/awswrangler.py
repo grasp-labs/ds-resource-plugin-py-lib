@@ -22,9 +22,12 @@ from typing import Any
 
 import awswrangler as wr
 import pandas as pd
+from ds_common_logger_py_lib import Logger
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
 from ...serde.serialize.base import DataSerializer
+
+logger = Logger.get_logger(__name__, package=True)
 
 
 @dataclass(kw_only=True)
@@ -41,7 +44,7 @@ class AwsWranglerSerializer(DataSerializer):
         Returns:
             A value.
         """
-        self.log.info(f"AwsWranglerSerializer __call__ with format: {self.format} and args: {self.kwargs}")
+        logger.debug(f"AwsWranglerSerializer __call__ with format: {self.format} and args: {self.kwargs}")
         boto3_session = kwargs.get("boto3_session")
         if not boto3_session:
             raise ValueError("AWS boto3 Session is required.")

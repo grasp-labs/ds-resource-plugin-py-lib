@@ -22,6 +22,8 @@ import json
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from ds_common_logger_py_lib import Logger
+
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
@@ -29,6 +31,8 @@ import pandas as pd
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
 from ...serde.deserialize.base import DataDeserializer
+
+logger = Logger.get_logger(__name__, package=True)
 
 
 @dataclass(kw_only=True)
@@ -45,7 +49,7 @@ class PandasDeserializer(DataDeserializer):
         Returns:
             A pandas DataFrame.
         """
-        self.log.info(f"PandasDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
+        logger.debug(f"PandasDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
 
         if isinstance(value, bytes):
             value = io.BytesIO(value)

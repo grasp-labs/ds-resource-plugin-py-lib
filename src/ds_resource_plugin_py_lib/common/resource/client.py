@@ -26,7 +26,6 @@ Example
     print(dataset.read())
 """
 
-import logging
 from functools import lru_cache
 from importlib import import_module
 from importlib.metadata import entry_points
@@ -34,17 +33,17 @@ from pathlib import Path
 from typing import Any, cast
 
 import yaml
-from ds_common_logger_py_lib.mixin import LoggingMixin
+from ds_common_logger_py_lib import Logger
 from ds_common_serde_py_lib.errors import DeserializationError
 
 from ...libs.utils.import_string import import_string
 from ..resource.dataset.base import Dataset, DatasetInfo
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
 
+logger = Logger.get_logger(__name__, package=True)
 
-class ResourceClient(LoggingMixin):
-    log_level = logging.DEBUG
 
+class ResourceClient:
     PROTOCOL_GROUP = "ds.protocols"
     PROVIDER_GROUP = "ds.providers"
 
@@ -55,9 +54,9 @@ class ResourceClient(LoggingMixin):
         self._datasets: dict[tuple[str, str], DatasetInfo] = {}
         self._discover_resources(self.PROTOCOL_GROUP)
         self._discover_resources(self.PROVIDER_GROUP)
-        self.log.debug(f"Loaded {len(self._resource_dict)} resources")
-        self.log.debug(f"Loaded {len(self._linked_services)} linked services")
-        self.log.debug(f"Loaded {len(self._datasets)} datasets")
+        logger.debug(f"Loaded {len(self._resource_dict)} resources")
+        logger.debug(f"Loaded {len(self._linked_services)} linked services")
+        logger.debug(f"Loaded {len(self._datasets)} datasets")
 
     @classmethod
     @lru_cache(maxsize=1)
@@ -85,7 +84,7 @@ class ResourceClient(LoggingMixin):
         try:
             eps = entry_points(group=group)
         except Exception as exc:
-            self.log.warning(f"Failed to read entry points for {group}: {exc}")
+            logger.warning(f"Failed to read entry points for {group}: {exc}")
             return
 
         for ep in eps:
@@ -93,14 +92,14 @@ class ResourceClient(LoggingMixin):
                 module = import_module(ep.module)
                 module_path = getattr(module, "__file__", None)
                 if not module_path:
-                    self.log.warning(f"Entry point {ep.name} has no __file__; skipping.")
+                    logger.warning(f"Entry point {ep.name} has no __file__; skipping.")
                     continue
 
                 real_path = str(Path(module_path).parent.resolve())
                 self._scan_resource_directory(real_path)
 
             except Exception as exc:
-                self.log.error(f"Error when loading entry point {ep.name} ({group}): {exc}")
+                logger.error(f"Error when loading entry point {ep.name} ({group}): {exc}")
 
     def _scan_resource_directory(self, resource_dir: str) -> None:
         """
@@ -111,7 +110,7 @@ class ResourceClient(LoggingMixin):
         """
         resource_path = Path(resource_dir)
         if not resource_path.exists():
-            self.log.debug(f"Resource directory {resource_dir} does not exist")
+            logger.debug(f"Resource directory {resource_dir} does not exist")
             return
 
         self._load_resource_from_path(str(resource_path))
@@ -126,14 +125,14 @@ class ResourceClient(LoggingMixin):
         resource_dir = Path(path)
         resource_yaml = resource_dir / "resource.yaml"
         if not resource_yaml.exists():
-            self.log.debug(f"No resource.yaml found in {path}")
+            logger.debug(f"No resource.yaml found in {path}")
             return
 
         try:
             with Path(resource_yaml).open() as f:
                 resource_config = yaml.safe_load(f)
                 if not resource_config:
-                    self.log.warning(f"Empty resource configuration in {resource_yaml}")
+                    logger.warning(f"Empty resource configuration in {resource_yaml}")
                     return
 
                 resource_name = resource_config.get("name", resource_dir.name)
@@ -141,7 +140,7 @@ class ResourceClient(LoggingMixin):
                 self._parse_linked_services(resource_config)
                 self._parse_datasets(resource_config)
         except Exception as exc:
-            self.log.error(f"Error loading resource configuration from {resource_yaml}: {exc}")
+            logger.error(f"Error loading resource configuration from {resource_yaml}: {exc}")
 
     def _parse_linked_services(self, config: dict[str, Any]) -> None:
         """
@@ -199,7 +198,7 @@ class ResourceClient(LoggingMixin):
             Type[Dataset]
         """
         cls_name = self.datasets[(_type, version)].class_name
-        self.log.debug("Dataset Class Name: %s", cls_name)
+        logger.debug("Dataset Class Name: %s", cls_name)
         return cast("type[Dataset[Any, Any, Any, Any]]", import_string(cls_name))
 
     def _get_linked_service_model_cls(self, _type: str, version: str) -> type[LinkedService[Any]]:
@@ -213,7 +212,7 @@ class ResourceClient(LoggingMixin):
             Type[LinkedService]
         """
         cls_name = self.linked_services[(_type, version)].class_name
-        self.log.debug("Linked Service Class Name: %s", cls_name)
+        logger.debug("Linked Service Class Name: %s", cls_name)
         return cast("type[LinkedService[Any]]", import_string(cls_name))
 
     def linked_service(self, config: dict[str, Any]) -> LinkedService[Any]:
@@ -234,7 +233,7 @@ class ResourceClient(LoggingMixin):
             linked_service: LinkedService[Any] = model_cls.deserialize(config)
             return linked_service
         except (TypeError, KeyError) as exc:
-            self.log.exception(f"Error deserializing linked service: {exc}")
+            logger.error(f"Error deserializing linked service: {exc}")
             raise DeserializationError(
                 message=f"Error deserializing linked service: {exc}",
                 details={"config": config, "error": str(exc)},
@@ -258,7 +257,7 @@ class ResourceClient(LoggingMixin):
             dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset
         except (TypeError, KeyError) as exc:
-            self.log.exception(f"Error deserializing dataset: {exc}")
+            logger.error(f"Error deserializing dataset: {exc}")
             raise DeserializationError(
                 message=f"Error deserializing dataset: {exc}",
                 details={"config": config, "error": str(exc)},
