@@ -8,6 +8,7 @@ Base dataset models and typed properties.
 """
 
 import io
+import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -82,17 +83,21 @@ class Dataset(
     You probably want to use the subclasses and not this class directly.
     """
 
+    id: uuid.UUID
+    name: str
+    description: str | None = None
+
     settings: DatasetSettingsType
     linked_service: LinkedServiceType
 
     serializer: SerializerType | None = None
     deserializer: DeserializerType | None = None
 
-    post_fetch_callback: Callable[..., Any] | None = None
-    prepare_write_callback: Callable[..., Any] | None = None
+    post_fetch_callback: Callable[..., Any] | None = field(default=None, metadata={"serialize": False})
+    prepare_write_callback: Callable[..., Any] | None = field(default=None, metadata={"serialize": False})
 
-    input: Any | None = None
-    output: Any | None = None
+    input: Any | None = field(default=None, metadata={"serialize": False})
+    output: Any | None = field(default=None, metadata={"serialize": False})
 
     schema: dict[str, Any] | None = None
     next: bool | None = True
@@ -223,8 +228,8 @@ class BinaryDataset(
     The output of the dataset is a binary file.
     """
 
-    input: io.BytesIO = field(default_factory=io.BytesIO)
-    output: io.BytesIO = field(default_factory=io.BytesIO)
+    input: io.BytesIO = field(default_factory=io.BytesIO, metadata={"serialize": False})
+    output: io.BytesIO = field(default_factory=io.BytesIO, metadata={"serialize": False})
 
     next: bool | None = True
     cursor: str | None = None
@@ -243,8 +248,8 @@ class TabularDataset(
     The output of the dataset is a pandas DataFrame.
     """
 
-    input: pd.DataFrame = field(default_factory=pd.DataFrame)
-    output: pd.DataFrame = field(default_factory=pd.DataFrame)
+    input: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
+    output: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
 
     schema: dict[str, Any] | None = None
     next: bool | None = True

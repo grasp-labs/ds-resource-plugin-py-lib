@@ -7,6 +7,7 @@ Description
 Base models for linked services.
 """
 
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import StrEnum
@@ -76,6 +77,10 @@ class LinkedService(
 
     All required parameters must be populated in the constructor in order to send to ds-workflow-service.
     """
+
+    id: uuid.UUID
+    name: str
+    description: str | None = None
 
     settings: LinkedServiceSettingsType
 
