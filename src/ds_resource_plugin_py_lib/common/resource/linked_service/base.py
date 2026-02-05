@@ -81,6 +81,7 @@ class LinkedService(
     id: uuid.UUID
     name: str
     description: str | None = None
+    version: str
 
     settings: LinkedServiceSettingsType
 
