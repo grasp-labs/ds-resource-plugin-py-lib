@@ -23,9 +23,6 @@ class _DummySettings(LinkedServiceSettings):
 
 @dataclass(kw_only=True)
 class _DummyLinkedService(LinkedService[_DummySettings]):
-    id: uuid.UUID
-    name: str
-    description: str | None = None
     settings: _DummySettings
 
     @property
@@ -48,6 +45,7 @@ class TestLinkedServiceBaseAbstractBodies:
         ls = _DummyLinkedService(
             id=uuid.uuid4(),
             name="test_linked_service",
+            version="1.0.0",
             settings=_DummySettings(),
         )
 

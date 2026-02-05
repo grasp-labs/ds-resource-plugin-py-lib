@@ -51,9 +51,6 @@ class _DummyDatasetSettings(DatasetSettings):
 
 @dataclass(kw_only=True)
 class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetSettings, DataSerializer, DataDeserializer]):
-    id: uuid.UUID
-    name: str
-    description: str | None = None
     settings: _DummyDatasetSettings
     linked_service: _DummyLinkedService
 
@@ -86,10 +83,12 @@ class TestDatasetBaseAbstractBodies:
         ds = _DummyDataset(
             id=uuid.uuid4(),
             name="test_dataset",
+            version="1.0.0",
             settings=_DummyDatasetSettings(),
             linked_service=_DummyLinkedService(
                 id=uuid.uuid4(),
                 name="test_linked_service",
+                version="1.0.0",
                 settings=_DummyLinkedServiceSettings(),
             ),
         )
