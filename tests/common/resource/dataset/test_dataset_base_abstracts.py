@@ -7,6 +7,7 @@ Description
 Cover base `Dataset` abstract-method NotImplementedError bodies.
 """
 
+import uuid
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
@@ -50,6 +51,9 @@ class _DummyDatasetSettings(DatasetSettings):
 
 @dataclass(kw_only=True)
 class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetSettings, DataSerializer, DataDeserializer]):
+    id: uuid.UUID
+    name: str
+    description: str | None = None
     settings: _DummyDatasetSettings
     linked_service: _DummyLinkedService
 
@@ -80,8 +84,14 @@ class _DummyDataset(Dataset[_DummyLinkedService, _DummyDatasetSettings, DataSeri
 class TestDatasetBaseAbstractBodies:
     def test_dataset_base_abstracts_raise_not_implemented(self):
         ds = _DummyDataset(
+            id=uuid.uuid4(),
+            name="test_dataset",
             settings=_DummyDatasetSettings(),
-            linked_service=_DummyLinkedService(settings=_DummyLinkedServiceSettings()),
+            linked_service=_DummyLinkedService(
+                id=uuid.uuid4(),
+                name="test_linked_service",
+                settings=_DummyLinkedServiceSettings(),
+            ),
         )
 
         with pytest.raises(NotImplementedError):

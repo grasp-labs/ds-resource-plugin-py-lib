@@ -7,6 +7,7 @@ Description
 Cover base `LinkedService` abstract-method NotImplementedError bodies.
 """
 
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -22,6 +23,9 @@ class _DummySettings(LinkedServiceSettings):
 
 @dataclass(kw_only=True)
 class _DummyLinkedService(LinkedService[_DummySettings]):
+    id: uuid.UUID
+    name: str
+    description: str | None = None
     settings: _DummySettings
 
     @property
@@ -41,7 +45,11 @@ class _DummyLinkedService(LinkedService[_DummySettings]):
 
 class TestLinkedServiceBaseAbstractBodies:
     def test_linked_service_base_abstracts_raise_not_implemented(self):
-        ls = _DummyLinkedService(settings=_DummySettings())
+        ls = _DummyLinkedService(
+            id=uuid.uuid4(),
+            name="test_linked_service",
+            settings=_DummySettings(),
+        )
 
         with pytest.raises(NotImplementedError):
             _ = ls.type
