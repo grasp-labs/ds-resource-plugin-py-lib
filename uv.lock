@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -454,19 +454,19 @@ wheels = [
 
 [[package]]
 name = "ds-common-serde-py-lib"
-version = "0.1.0a3"
+version = "0.1.0b1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ds-common-logger-py-lib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5f/00/2877a13899df85949293b63d0c40e04cf7ebe4b4722a2455146cc07e3617/ds_common_serde_py_lib-0.1.0a3.tar.gz", hash = "sha256:97a19ffcd961cfcd22c26883f7ff7be984620ff4c608d3e5349e100e21911b7a", size = 20754, upload-time = "2026-01-26T16:30:19.508Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/35/26/14ce719b3ef718c8585bb498c9ce54a71e34c573060240a713dd731ca669/ds_common_serde_py_lib-0.1.0b1.tar.gz", hash = "sha256:6885de00024f773c1b29cbd1903947cd4e2e393ecc7a8251c99b1604976b1ac9", size = 21260, upload-time = "2026-02-04T18:55:15.894Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/d4/dcdf562958c472b700b9bd81285e0ce2b917b593a03989c1792c75eafb91/ds_common_serde_py_lib-0.1.0a3-py3-none-any.whl", hash = "sha256:42a5d2200793741a2bc2219934ba5b2806676e3f703fc06edc4feb48a61e1e10", size = 16064, upload-time = "2026-01-26T16:30:17.068Z" },
+    { url = "https://files.pythonhosted.org/packages/49/21/10c2a2ecc3fb4586e278185a38a6111d1c53002495f5cf6f0348fbf591d0/ds_common_serde_py_lib-0.1.0b1-py3-none-any.whl", hash = "sha256:3fdc2c8f6283a81328ed277e6e10b3014835ad853351f035b4568dc12d1babd3", size = 16329, upload-time = "2026-02-04T18:55:14.473Z" },
 ]
 
 [[package]]
 name = "ds-resource-plugin-py-lib"
-version = "0.1.0a5"
+version = "0.1.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "awswrangler" },
@@ -511,7 +511,7 @@ requires-dist = [
     { name = "awswrangler", specifier = ">=3.11.0,<4.0.0" },
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "ds-common-logger-py-lib", specifier = ">=0.1.0a5,<1.0.0" },
-    { name = "ds-common-serde-py-lib", specifier = ">=0.1.0a3,<1.0.0" },
+    { name = "ds-common-serde-py-lib", specifier = ">=0.1.0b1,<1.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
     { name = "pandas", specifier = ">=2.1.0,<3.0.0" },
     { name = "pandas-stubs", marker = "extra == 'dev'", specifier = ">=2.1.0" },
