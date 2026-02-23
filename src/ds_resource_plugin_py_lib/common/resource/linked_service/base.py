@@ -119,35 +119,68 @@ class LinkedService(
         Returns:
             The type of the linked service.
         """
-        raise NotImplementedError("type property is not implemented")
+        ...
 
+    @property
     @abstractmethod
-    def connect(self) -> Any:
+    def connection(self) -> Any:
         """
-        Connect to the data store.
+        Return the backend client or connection object. Must raise
+        ``ConnectionError`` if ``connect()`` has not been called.
 
         Returns:
-            The result of the connect method.
+            The backend client, session, or connection object.
+
+        Raises:
+            ConnectionError: If the connection has not been established.
+
+        See Also:
+            Full contract: ``docs/LINKED_SERVICE_CONTRACT.md`` -- ``connection``
         """
-        raise NotImplementedError("connect method is not implemented")
+        ...
+
+    @abstractmethod
+    def connect(self) -> None:
+        """
+        Establish a connection to the backend data store. The result is
+        stored internally and accessible via the ``connection`` property.
+
+        Raises:
+            ConnectionError: If the connection cannot be established.
+            AuthenticationError: If credentials are invalid.
+            NotSupportedError: If the provider does not support connect.
+
+        See Also:
+            Full contract: ``docs/LINKED_SERVICE_CONTRACT.md`` -- ``connect()``
+        """
+        ...
 
     @abstractmethod
     def test_connection(self) -> tuple[bool, str]:
         """
-        Test the connection to the data store.
+        Verify that the connection to the backend is healthy. Does not
+        raise on connection failure -- returns ``(False, "reason")``
+        instead.
 
         Returns:
-            A tuple containing a boolean indicating if the
-            connection is successful and a string containing the error message.
+            A tuple ``(success, message)``. On success: ``(True, "")``.
+            On failure: ``(False, "error description")``.
+
+        Raises:
+            NotSupportedError: If the provider does not support test_connection.
+
+        See Also:
+            Full contract: ``docs/LINKED_SERVICE_CONTRACT.md`` -- ``test_connection()``
         """
-        raise NotImplementedError("test_connection method is not implemented")
+        ...
 
     @abstractmethod
     def close(self) -> None:
         """
-        Close the linked service.
+        Release connections, sessions, or handles. Must not raise if
+        already closed. Idempotent.
 
-        Returns:
-            None.
+        See Also:
+            Full contract: ``docs/LINKED_SERVICE_CONTRACT.md`` -- ``close()``
         """
-        raise NotImplementedError("close method is not implemented")
+        ...

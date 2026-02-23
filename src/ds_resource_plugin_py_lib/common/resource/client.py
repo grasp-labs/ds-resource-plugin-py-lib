@@ -22,7 +22,8 @@ Example
     dataset = client.dataset(config={"type": "dataset.example", "version": "1.0.0"})
     linked_service = client.linked_service(config={"type": "linked_service.example", "version": "1.0.0"})
 
-    print(linked_service.connect())
+    linked_service.connect()
+    print(linked_service.connection)
     print(dataset.read())
 """
 

@@ -140,3 +140,42 @@ class RenameError(DatasetException):
         details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, code, status_code, details)
+
+
+class UpsertError(DatasetException):
+    """Raised when an upsert operation fails."""
+
+    def __init__(
+        self,
+        message: str = "Upsert operation failed",
+        code: str = "DS_DATASET_UPSERT_ERROR",
+        status_code: int = 500,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)
+
+
+class PurgeError(DatasetException):
+    """Raised when a purge operation fails."""
+
+    def __init__(
+        self,
+        message: str = "Purge operation failed",
+        code: str = "DS_DATASET_PURGE_ERROR",
+        status_code: int = 500,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)
+
+
+class ListError(DatasetException):
+    """Raised when a list operation fails."""
+
+    def __init__(
+        self,
+        message: str = "List operation failed",
+        code: str = "DS_DATASET_LIST_ERROR",
+        status_code: int = 500,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)

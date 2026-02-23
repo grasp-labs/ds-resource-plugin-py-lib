@@ -8,9 +8,11 @@ Linked service models and typed properties.
 """
 
 from .base import LinkedService, LinkedServiceInfo, LinkedServiceSettings
+from .enums import LinkedServiceMethod
 
 __all__ = [
     "LinkedService",
     "LinkedServiceInfo",
+    "LinkedServiceMethod",
     "LinkedServiceSettings",
 ]

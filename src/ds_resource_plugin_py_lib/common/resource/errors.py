@@ -25,3 +25,29 @@ class ResourceException(Exception):
         self.message = message
         self.details = details or {}
         super().__init__(self.message)
+
+
+class NotSupportedError(ResourceException):
+    """Raised when a provider does not support an optional method."""
+
+    def __init__(
+        self,
+        message: str = "Operation not supported",
+        code: str = "DS_RESOURCE_NOT_SUPPORTED_ERROR",
+        status_code: int = 501,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)
+
+
+class ValidationError(ResourceException):
+    """Raised when input fails validation before reaching the backend."""
+
+    def __init__(
+        self,
+        message: str = "Validation failed",
+        code: str = "DS_RESOURCE_VALIDATION_ERROR",
+        status_code: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)
