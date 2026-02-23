@@ -50,4 +50,4 @@ repos:
     rev: v0.38.0
     hooks:
       - id: markdownlint
-        args: [--fix]
+        args: [--fix, --config, .config/markdownlint.yaml]
