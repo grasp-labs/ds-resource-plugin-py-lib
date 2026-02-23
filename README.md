@@ -103,23 +103,29 @@ uv run pytest tests/test_example.py -v
 
 ```text
 .
-├── .config/                   # Configuration tooling files
+├── .config/                   # Tool configurations (ruff, mypy, pytest, …)
 ├── .github/
-│   ├── workflows/            # CI/CD workflows
-│   └── CODEOWNERS            # Code ownership file
+│   ├── workflows/             # CI/CD workflows
+│   └── CODEOWNERS             # Code ownership file
 ├── src/
-│   └── ds_common_{name}_py_lib/     # Rename to your module name
-│       └── __init__.py
-├── .pre-commit-config.yaml   # Pre-commit hooks configuration
-├── tests/                    # Test files
-├── docs/                     # Sphinx documentation
-├── LICENSE-APACHE            # License file
-├── pyproject.toml            # Project configuration
-├── Makefile                  # Development commands
-├── codecov.yaml              # Codecov configuration
-├── CONTRIBUTING.md           # Contribution guidelines
-├── PyPI.md                   # PyPI publishing guide
-├── README.md                 # This file
+│   └── ds_resource_plugin_py_lib/
+│       ├── common/
+│       │   ├── resource/
+│       │   │   ├── dataset/        # Dataset base classes & contracts
+│       │   │   └── linked_service/ # Linked service base classes
+│       │   └── serde/             # Serialization / deserialization
+│       └── libs/                  # Shared utilities
+├── tests/                     # Test files
+├── docs/                      # Contract documentation
+├── examples/                  # Runnable example providers
+├── .pre-commit-config.yaml    # Pre-commit hooks configuration
+├── pyproject.toml             # Project configuration
+├── Makefile                   # Development commands
+├── codecov.yaml               # Codecov configuration
+├── CONTRIBUTING.md            # Contribution guidelines
+├── PyPI.md                    # PyPI publishing guide
+├── LICENSE-APACHE             # License file
+└── README.md                  # This file
 ```
 
 ## Features
@@ -141,6 +147,8 @@ uv run pytest tests/test_example.py -v
 
 ## Documentation
 
+- [Dataset Contract](docs/DATASET_CONTRACT.md) - Rules for dataset provider implementations
+- [Linked Service Contract](docs/LINKED_SERVICE_CONTRACT.md) - Rules for linked service provider implementations
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 - [PyPI.md](PyPI.md) - PyPI publishing guide
 - [README.md](README.md) - This file
