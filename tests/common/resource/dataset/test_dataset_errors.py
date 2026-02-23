@@ -14,12 +14,15 @@ from ds_resource_plugin_py_lib.common.resource.dataset.errors import (
     DatasetException,
     DeleteError,
     InvalidDatasetClassError,
+    ListError,
     MismatchedLinkedServiceError,
     NotFoundError,
+    PurgeError,
     ReadError,
     RenameError,
     UnsupportedDatasetTypeError,
     UpdateError,
+    UpsertError,
 )
 
 
@@ -36,6 +39,9 @@ from ds_resource_plugin_py_lib.common.resource.dataset.errors import (
         (DeleteError, "DS_DATASET_DELETE_ERROR", 500, "Delete operation failed"),
         (ReadError, "DS_DATASET_READ_ERROR", 500, "Read operation failed"),
         (RenameError, "DS_DATASET_RENAME_ERROR", 500, "Rename operation failed"),
+        (UpsertError, "DS_DATASET_UPSERT_ERROR", 500, "Upsert operation failed"),
+        (PurgeError, "DS_DATASET_PURGE_ERROR", 500, "Purge operation failed"),
+        (ListError, "DS_DATASET_LIST_ERROR", 500, "List operation failed"),
     ],
 )
 def test_dataset_exception_defaults(exc_cls, expected_code, expected_status, expected_message):
