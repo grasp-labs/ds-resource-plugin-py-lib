@@ -74,6 +74,23 @@ and standards for contributing to DS Python Library packages.
    - Reference to related issues
    - Screenshots/examples if applicable
 
+## Dataset Provider Contract
+
+All dataset provider implementations must follow the rules defined in
+[docs/DATASET_CONTRACT.md](docs/DATASET_CONTRACT.md). Read this document
+before implementing or modifying any dataset provider. It defines method
+signatures, return types, error handling, atomicity guarantees, and input
+validation requirements.
+
+## Linked Service Provider Contract
+
+All linked service provider implementations must follow the rules
+defined in
+[docs/LINKED_SERVICE_CONTRACT.md](docs/LINKED_SERVICE_CONTRACT.md).
+Read this document before implementing or modifying any linked service
+provider. It defines the connection lifecycle, the `connection`
+property contract, error handling, and context manager behaviour.
+
 ## Coding Standards
 
 ### Code Style

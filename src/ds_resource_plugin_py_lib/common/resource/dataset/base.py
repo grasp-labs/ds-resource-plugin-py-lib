@@ -10,7 +10,6 @@ Base dataset models and typed properties.
 import io
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import TracebackType
@@ -22,6 +21,9 @@ from ds_common_serde_py_lib import Serializable
 from ...resource.linked_service.base import LinkedService
 from ...serde.deserialize.base import DataDeserializer
 from ...serde.serialize.base import DataSerializer
+from .decorators import track_result
+from .enums import DatasetMethod
+from .result import OperationInfo
 
 
 class DatasetInfo(NamedTuple):
@@ -94,15 +96,27 @@ class Dataset(
     serializer: SerializerType | None = None
     deserializer: DeserializerType | None = None
 
-    post_fetch_callback: Callable[..., Any] | None = field(default=None, metadata={"serialize": False})
-    prepare_write_callback: Callable[..., Any] | None = field(default=None, metadata={"serialize": False})
-
     input: Any | None = field(default=None, metadata={"serialize": False})
     output: Any | None = field(default=None, metadata={"serialize": False})
 
-    schema: dict[str, Any] | None = None
-    next: bool | None = True
-    cursor: str | None = None
+    checkpoint: dict[str, Any] = field(default_factory=dict)
+    operation: OperationInfo = field(default_factory=OperationInfo)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """
+        Initialize the subclass.
+
+        Args:
+            kwargs: The keyword arguments.
+
+        Returns:
+            The subclass.
+        """
+        super().__init_subclass__(**kwargs)
+        for name in DatasetMethod.all_values():
+            method = cls.__dict__.get(name)
+            if method is not None and not getattr(method, "_tracked", False):
+                setattr(cls, name, track_result(method))
 
     def __enter__(self) -> Self:
         """
@@ -130,90 +144,148 @@ class Dataset(
         self.close()
 
     @property
+    def supports_checkpoint(self) -> bool:
+        """Whether this provider supports incremental loads via ``self.checkpoint``."""
+        return False
+
+    @property
     @abstractmethod
     def type(self) -> StrEnum:
         """
         Get the type of the dataset.
         """
-        raise NotImplementedError("Method (type) not implemented")
+        ...
 
     @abstractmethod
-    def create(self, **kwargs: Any) -> Any:
+    def create(self) -> None:
         """
-        Create the dataset.
+        Insert all rows in ``self.input`` into the target as a single atomic
+        transaction. Must not delete, update, or overwrite existing data.
 
-        Args:
-            **kwargs: The keyword arguments to pass to the create method.
+        Raises:
+            CreateError: If the operation fails.
+            NotSupportedError: If the provider does not support create.
 
-        Returns:
-            The result of the create method.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``create()``
         """
-        raise NotImplementedError("Method (create) not implemented")
+        ...
 
     @abstractmethod
-    def read(self, **kwargs: Any) -> Any:
+    def read(self) -> None:
         """
-        Read the dataset.
+        Read data from the source and assign it to ``self.output``.
+        Pagination within a single call is handled internally.
+        Supports incremental loads via ``self.checkpoint``.
 
-        Args:
-            **kwargs: The keyword arguments to pass to the read method.
+        Raises:
+            ReadError: If the operation fails.
+            NotSupportedError: If the provider does not support read.
 
-        Returns:
-            The result of the read method.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``read()``
         """
-        raise NotImplementedError("Method (read) not implemented")
+        ...
 
     @abstractmethod
-    def delete(self, **kwargs: Any) -> Any:
+    def update(self) -> None:
         """
-        Delete the dataset.
+        Update existing rows in the target matched by identity columns
+        defined in ``self.settings``. Atomic. Must not insert new rows.
 
-        Args:
-            **kwargs: The keyword arguments to pass to the delete method.
+        Raises:
+            UpdateError: If the operation fails.
+            NotSupportedError: If the provider does not support update.
 
-        Returns:
-            The result of the delete method.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``update()``
         """
-        raise NotImplementedError("Method (delete) not implemented")
+        ...
 
     @abstractmethod
-    def update(self, **kwargs: Any) -> Any:
+    def upsert(self) -> None:
         """
-        Update the dataset.
+        Insert rows that do not exist, update rows that do, matched by
+        identity columns defined in ``self.settings``. Atomic.
 
-        Args:
-            **kwargs: The keyword arguments to pass to the update method.
+        Raises:
+            UpsertError: If the operation fails.
+            NotSupportedError: If the provider does not support upsert.
 
-        Returns:
-            The result of the update method.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``upsert()``
         """
-        raise NotImplementedError("Method (update) not implemented")
+        ...
 
     @abstractmethod
-    def rename(self, **kwargs: Any) -> Any:
+    def delete(self) -> None:
         """
-        Rename the dataset.
+        Remove specific rows from the target matched by identity columns
+        defined in ``self.settings``. Atomic. Idempotent.
 
-        Args:
-            **kwargs: The keyword arguments to pass to the rename method.
+        Raises:
+            DeleteError: If the operation fails.
+            NotSupportedError: If the provider does not support delete.
 
-        Returns:
-            The result of the rename method.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``delete()``
         """
-        raise NotImplementedError("Method (move) not implemented")
+        ...
+
+    @abstractmethod
+    def purge(self) -> None:
+        """
+        Remove all content from the target. ``self.input`` is not used.
+        Atomic. Idempotent.
+
+        Raises:
+            PurgeError: If the operation fails.
+            NotSupportedError: If the provider does not support purge.
+
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``purge()``
+        """
+        ...
+
+    @abstractmethod
+    def list(self) -> None:
+        """
+        Discover available resources and populate ``self.output`` with a
+        DataFrame of resources and their metadata. Idempotent.
+
+        Raises:
+            ListError: If the operation fails.
+            NotSupportedError: If the provider does not support listing.
+
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``list()``
+        """
+        ...
+
+    @abstractmethod
+    def rename(self) -> None:
+        """
+        Rename the resource in the backend. Atomic. Not idempotent.
+
+        Raises:
+            RenameError: If the operation fails.
+            NotSupportedError: If the provider does not support renaming.
+
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``rename()``
+        """
+        ...
 
     @abstractmethod
     def close(self) -> None:
         """
-        Close the dataset.
+        Release any connections, sessions, or handles held by the linked
+        service. Must not raise if already closed. Idempotent.
 
-        This method is called when the dataset is closed.
-        It is used to clean up the dataset and close the connection.
-
-        Returns:
-            None.
+        See Also:
+            Full contract: ``docs/DATASET_CONTRACT.md`` -- ``close()``
         """
-        raise NotImplementedError("Method (close) not implemented")
+        ...
 
 
 @dataclass(kw_only=True)
@@ -232,9 +304,6 @@ class BinaryDataset(
     input: io.BytesIO = field(default_factory=io.BytesIO, metadata={"serialize": False})
     output: io.BytesIO = field(default_factory=io.BytesIO, metadata={"serialize": False})
 
-    next: bool | None = True
-    cursor: str | None = None
-
 
 @dataclass(kw_only=True)
 class TabularDataset(
@@ -251,7 +320,3 @@ class TabularDataset(
 
     input: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
     output: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
-
-    schema: dict[str, Any] | None = None
-    next: bool | None = True
-    cursor: str | None = None
