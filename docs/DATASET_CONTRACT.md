@@ -615,6 +615,34 @@ Clean up the connection to the backend.
 
 ---
 
+## Provider Discovery (Reference)
+
+Dataset providers must be discoverable through a package-level
+`resource.yaml` file and Python entry points.
+
+Required `resource.yaml` fields for dataset entries:
+
+- `name`
+- `type` (for example: `ds.resource.dataset.{name}`)
+- `version`
+- `description`
+- `class_name`
+
+The provider package must also define:
+
+```toml
+[project.entry-points."ds.providers"]
+{name} = "ds_provider_{name}_py_lib"
+
+[tool.setuptools.package-data]
+ds_provider_{name}_py_lib = ["resource.yaml", "py.typed"]
+```
+
+Enum rule: enum member values used for identifiers must
+be lowercase strings.
+
+---
+
 ## Compliance Testing
 
 The contract is enforced through a shared compliance test suite

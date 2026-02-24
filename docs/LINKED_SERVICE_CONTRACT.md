@@ -163,6 +163,34 @@ inherit from `LinkedServiceException` > `ResourceException`.
 
 ---
 
+## Provider Discovery (Reference)
+
+Linked service providers must be discoverable through a package-level
+`resource.yaml` file and Python entry points.
+
+Required `resource.yaml` fields for linked service entries:
+
+- `name`
+- `type` (for example: `ds.resource.linked_service.{name}`)
+- `version`
+- `description`
+- `class_name`
+
+The provider package must also define:
+
+```toml
+[project.entry-points."ds.providers"]
+{name} = "ds_provider_{name}_py_lib"
+
+[tool.setuptools.package-data]
+ds_provider_{name}_py_lib = ["resource.yaml", "py.typed"]
+```
+
+Enum rule: enum member values used for identifiers must
+be lowercase strings.
+
+---
+
 ## Summary
 
 | Member              | Intent                | Returns       | Idempotent |
