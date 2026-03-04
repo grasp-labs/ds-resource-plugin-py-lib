@@ -37,7 +37,7 @@ import yaml
 from ds_common_logger_py_lib import Logger
 from ds_common_serde_py_lib.errors import DeserializationError
 
-from ...libs.utils.import_string import import_string
+from ...libs.utils import import_string, sanitize_version
 from ..resource.dataset.base import Dataset, DatasetInfo
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
 
@@ -229,7 +229,7 @@ class ResourceClient:
         """
         try:
             type = config["type"]
-            version = config["version"]
+            version = sanitize_version(config["version"])
             model_cls = self._get_linked_service_model_cls(type, version)
             linked_service: LinkedService[Any] = model_cls.deserialize(config)
             return linked_service
@@ -253,7 +253,7 @@ class ResourceClient:
         """
         try:
             type = config["type"]
-            version = config["version"]
+            version = sanitize_version(config["version"])
             dataset_cls = self._get_dataset_model_cls(type, version)
             dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset

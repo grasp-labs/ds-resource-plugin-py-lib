@@ -31,12 +31,12 @@ class DatasetStorageFormatType(StrEnum):
     Enum to define the storage format types.
     """
 
-    PARQUET = "PARQUET"
-    CSV = "CSV"
-    JSON = "JSON"
-    EXCEL = "EXCEL"
-    SEMI_STRUCTURED_JSON = "SEMI_STRUCTURED_JSON"
-    XML = "XML"
+    PARQUET = "parquet"
+    CSV = "csv"
+    JSON = "json"
+    EXCEL = "excel"
+    SEMI_STRUCTURED_JSON = "semi_structured_json"
+    XML = "xml"
 
 
 @dataclass(kw_only=True)
