@@ -31,12 +31,12 @@ class DatasetStorageFormatType(StrEnum):
     Enum to define the storage format types.
     """
 
-    parquet = "parquet"
-    csv = "csv"
-    json = "json"
-    excel = "excel"
-    semi_structured_json = "semi_structured_json"
-    xml = "xml"
+    PARQUET = "parquet"
+    CSV = "csv"
+    JSON = "json"
+    EXCEL = "excel"
+    SEMI_STRUCTURED_JSON = "semi_structured_json"
+    XML = "xml"
 
 
 @dataclass(kw_only=True)
@@ -51,23 +51,23 @@ class DatasetStorageFormat(Serializable):
 
 @dataclass(kw_only=True)
 class ParquetFormat(DatasetStorageFormat):
-    type: DatasetStorageFormatType = DatasetStorageFormatType.parquet
+    type: DatasetStorageFormatType = DatasetStorageFormatType.PARQUET
     args: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(kw_only=True)
 class CsvFormat(DatasetStorageFormat):
-    type: DatasetStorageFormatType = DatasetStorageFormatType.csv
+    type: DatasetStorageFormatType = DatasetStorageFormatType.CSV
     args: dict[str, Any] = field(default_factory=lambda: {"delimiter": ","})
 
 
 @dataclass(kw_only=True)
 class SemiStructuredJsonFormat(DatasetStorageFormat):
-    type: DatasetStorageFormatType = DatasetStorageFormatType.semi_structured_json
+    type: DatasetStorageFormatType = DatasetStorageFormatType.SEMI_STRUCTURED_JSON
     args: dict[str, Any] = field(default_factory=lambda: {"record_path": None})
 
 
 @dataclass(kw_only=True)
 class XMLFormat(DatasetStorageFormat):
-    type: DatasetStorageFormatType = DatasetStorageFormatType.xml
+    type: DatasetStorageFormatType = DatasetStorageFormatType.XML
     args: dict[str, Any] = field(default_factory=dict)

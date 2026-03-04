@@ -37,6 +37,8 @@ import yaml
 from ds_common_logger_py_lib import Logger
 from ds_common_serde_py_lib.errors import DeserializationError
 
+from ds_resource_plugin_py_lib.libs.utils.sanitize import sanitize_version
+
 from ...libs.utils.import_string import import_string
 from ..resource.dataset.base import Dataset, DatasetInfo
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
@@ -263,20 +265,3 @@ class ResourceClient:
                 message=f"Error deserializing dataset: {exc}",
                 details={"config": config, "error": str(exc)},
             ) from exc
-
-
-def sanitize_version(version: str) -> str:
-    """
-    Sanitize version string to ensure it follows a consistent format.
-    We can receive versions written as semver (v1.0.0)
-    or just the number (1.0.0). This function will strip any leading 'v' and whitespace.
-
-    Args:
-        version: The version string to sanitize.
-
-    Returns:
-        A sanitized version string.
-    """
-    # First remove surrounding whitespace, then strip any leading lowercase 'v'.
-    # Order matters because inputs like '  v1.2.3  ' should become '1.2.3'.
-    return version.strip().lstrip("v").strip()

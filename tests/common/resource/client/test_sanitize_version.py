@@ -1,6 +1,6 @@
 import pytest
 
-from ds_resource_plugin_py_lib.common.resource.client import sanitize_version
+from ds_resource_plugin_py_lib.libs.utils.sanitize import sanitize_version
 
 
 @pytest.mark.parametrize(

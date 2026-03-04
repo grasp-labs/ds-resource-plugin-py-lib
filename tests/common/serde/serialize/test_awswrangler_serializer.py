@@ -22,10 +22,10 @@ class TestAwsWranglerSerializer:
     @pytest.mark.parametrize(
         ("format_type", "method_name"),
         [
-            (DatasetStorageFormatType.csv, "to_csv"),
-            (DatasetStorageFormatType.parquet, "to_parquet"),
-            (DatasetStorageFormatType.json, "to_json"),
-            (DatasetStorageFormatType.excel, "to_excel"),
+            (DatasetStorageFormatType.CSV, "to_csv"),
+            (DatasetStorageFormatType.PARQUET, "to_parquet"),
+            (DatasetStorageFormatType.JSON, "to_json"),
+            (DatasetStorageFormatType.EXCEL, "to_excel"),
         ],
     )
     def test_tabular_formats(self, format_type, method_name, sample_dataframe, boto3_session):
@@ -46,7 +46,7 @@ class TestAwsWranglerSerializer:
             "path": "s3://bucket/data.xml",
         }
         with patch(target, return_value="uploaded") as mock_upload:
-            serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.xml, kwargs=kwargs)
+            serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.XML, kwargs=kwargs)
 
             result = serializer(sample_dataframe, boto3_session=boto3_session)
 
@@ -55,7 +55,7 @@ class TestAwsWranglerSerializer:
 
     def test_missing_boto3_session_raises(self, sample_dataframe):
         """Require boto3_session for all writes."""
-        serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.csv)
+        serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.CSV)
 
         with pytest.raises(ValueError, match=r"AWS boto3 Session is required\."):
             serializer(sample_dataframe)
