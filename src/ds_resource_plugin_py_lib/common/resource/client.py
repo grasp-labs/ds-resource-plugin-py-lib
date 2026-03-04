@@ -37,9 +37,7 @@ import yaml
 from ds_common_logger_py_lib import Logger
 from ds_common_serde_py_lib.errors import DeserializationError
 
-from ds_resource_plugin_py_lib.libs.utils.sanitize import sanitize_version
-
-from ...libs.utils.import_string import import_string
+from ...libs.utils import import_string, sanitize_version
 from ..resource.dataset.base import Dataset, DatasetInfo
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
 
