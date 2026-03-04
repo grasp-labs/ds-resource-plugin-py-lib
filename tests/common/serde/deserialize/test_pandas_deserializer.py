@@ -26,7 +26,7 @@ class TestPandasDeserializer:
     def test_csv_bytes_to_dataframe(self, sample_dataframe):
         """Ensure CSV bytes are parsed into a DataFrame."""
         csv_bytes = sample_dataframe.to_csv(index=False).encode("utf-8")
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.CSV)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.csv)
 
         result = deserializer(csv_bytes)
 
@@ -35,7 +35,7 @@ class TestPandasDeserializer:
     def test_json_string_to_dataframe(self, sample_dataframe):
         """Ensure JSON string input is handled correctly."""
         json_string = sample_dataframe.to_json(orient="records")
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.json)
 
         result = deserializer(json_string)
 
@@ -44,7 +44,7 @@ class TestPandasDeserializer:
 
     def test_semi_structured_json_normalization(self, semi_structured_json):
         """Normalize semi-structured JSON input."""
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(semi_structured_json)
 
@@ -62,7 +62,7 @@ class TestPandasDeserializer:
     def test_semi_structured_handles_bytes_io(self, semi_structured_json):
         """Ensure BytesIO input is decoded before normalization."""
         json_bytes = json.dumps(semi_structured_json).encode("utf-8")
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(json_bytes)
 
@@ -72,7 +72,7 @@ class TestPandasDeserializer:
     def test_semi_structured_handles_stringio(self, semi_structured_json):
         """Ensure StringIO input is parsed to JSON before normalization."""
         json_text = json.dumps(semi_structured_json)
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(json_text)
 
@@ -81,7 +81,7 @@ class TestPandasDeserializer:
 
     def test_parquet_reader_invoked(self, sample_dataframe):
         """Parquet format should delegate to pandas.read_parquet."""
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.PARQUET)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.parquet)
         with patch(
             "ds_resource_plugin_py_lib.common.serde.deserialize.pandas.pd.read_parquet", return_value=sample_dataframe
         ) as reader:
@@ -92,7 +92,7 @@ class TestPandasDeserializer:
     def test_semi_structured_stringio(self, semi_structured_json):
         """Ensure StringIO input is parsed and normalized."""
         json_text = json.dumps(semi_structured_json)
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(io.StringIO(json_text))
 
@@ -102,7 +102,7 @@ class TestPandasDeserializer:
     def test_semi_structured_plain_string(self, semi_structured_json):
         """Ensure raw JSON string input is normalized."""
         json_text = json.dumps(semi_structured_json)
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(json_text)
 
@@ -113,7 +113,7 @@ class TestPandasDeserializer:
         """Ensure BytesIO input is decoded and normalized."""
         json_bytes = json.dumps(semi_structured_json).encode("utf-8")
         buffer = io.BytesIO(json_bytes)
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(buffer)
 
@@ -122,7 +122,7 @@ class TestPandasDeserializer:
 
     def test_semi_structured_list_input_hits_str_branch(self, semi_structured_json):
         """List input is json-dumped then normalized (covers str branch)."""
-        deserializer = PandasDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
         result = deserializer(semi_structured_json)
 

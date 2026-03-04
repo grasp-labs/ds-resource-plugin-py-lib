@@ -23,14 +23,14 @@ class TestPandasSerializer:
 
     def test_rejects_non_dataframe(self):
         """Raise TypeError when input is not a DataFrame."""
-        serializer = PandasSerializer(format=DatasetStorageFormatType.CSV)
+        serializer = PandasSerializer(format=DatasetStorageFormatType.csv)
 
         with pytest.raises(TypeError):
             serializer(["not", "a", "dataframe"])
 
     def test_csv_sets_default_float_format(self, sample_dataframe):
         """Ensure CSV serialization sets default float_format when absent."""
-        serializer = PandasSerializer(format=DatasetStorageFormatType.CSV)
+        serializer = PandasSerializer(format=DatasetStorageFormatType.csv)
 
         csv_string = serializer(sample_dataframe, index=False)
 
@@ -39,7 +39,7 @@ class TestPandasSerializer:
 
     def test_json_serialization(self, sample_dataframe):
         """Serialize DataFrame to JSON."""
-        serializer = PandasSerializer(format=DatasetStorageFormatType.JSON, kwargs={"orient": "records"})
+        serializer = PandasSerializer(format=DatasetStorageFormatType.json, kwargs={"orient": "records"})
 
         json_string = serializer(sample_dataframe)
 
@@ -48,7 +48,7 @@ class TestPandasSerializer:
 
     def test_excel_uses_default_float_format(self, sample_dataframe):
         """Ensure Excel serialization sets float_format when absent."""
-        serializer = PandasSerializer(format=DatasetStorageFormatType.EXCEL, kwargs={"float_format": "%.2f"})
+        serializer = PandasSerializer(format=DatasetStorageFormatType.excel, kwargs={"float_format": "%.2f"})
 
         with patch(
             "ds_resource_plugin_py_lib.common.serde.serialize.pandas.pd.DataFrame.to_excel", return_value="excel"
@@ -61,7 +61,7 @@ class TestPandasSerializer:
 
     def test_xml_serialization(self, sample_dataframe):
         """Serialize DataFrame to XML."""
-        serializer = PandasSerializer(format=DatasetStorageFormatType.XML, kwargs={"index": False})
+        serializer = PandasSerializer(format=DatasetStorageFormatType.xml, kwargs={"index": False})
 
         xml_output = serializer(sample_dataframe)
 
@@ -79,7 +79,7 @@ class TestPandasSerializer:
         kwargs = {
             "index": False,
         }
-        serializer = PandasSerializer(format=DatasetStorageFormatType.PARQUET, kwargs=kwargs)
+        serializer = PandasSerializer(format=DatasetStorageFormatType.parquet, kwargs=kwargs)
         with patch(
             "ds_resource_plugin_py_lib.common.serde.serialize.pandas.pd.DataFrame.to_parquet", return_value="parquet"
         ) as to_parquet:

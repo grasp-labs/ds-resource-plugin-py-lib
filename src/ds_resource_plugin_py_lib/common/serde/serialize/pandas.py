@@ -56,20 +56,20 @@ class PandasSerializer(DataSerializer):
             if "float_format" not in self.kwargs:
                 self.kwargs["float_format"] = default_float_format
 
-        if self.format == DatasetStorageFormatType.CSV:
+        if self.format == DatasetStorageFormatType.csv:
             _ensure_float_format()
             return value.to_csv(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.PARQUET:
+        elif self.format == DatasetStorageFormatType.parquet:
             return value.to_parquet(**self.kwargs)
         elif self.format in (
-            DatasetStorageFormatType.JSON,
-            DatasetStorageFormatType.SEMI_STRUCTURED_JSON,
+            DatasetStorageFormatType.json,
+            DatasetStorageFormatType.semi_structured_json,
         ):
             return value.to_json(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.EXCEL:
+        elif self.format == DatasetStorageFormatType.excel:
             _ensure_float_format()
             return value.to_excel(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.XML:
+        elif self.format == DatasetStorageFormatType.xml:
             return value.to_xml(**self.kwargs)
         else:
             raise ValueError(f"Unsupported format: {self.format}")

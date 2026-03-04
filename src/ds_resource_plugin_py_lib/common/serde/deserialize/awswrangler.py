@@ -55,7 +55,7 @@ class AwsWranglerDeserializer(DataDeserializer):
         if not boto3_session:
             raise ValueError("AWS boto3 Session is required.")
 
-        if self.format == DatasetStorageFormatType.CSV:
+        if self.format == DatasetStorageFormatType.csv:
             return cast(
                 "pd.DataFrame",
                 wr.s3.read_csv(
@@ -64,7 +64,7 @@ class AwsWranglerDeserializer(DataDeserializer):
                     **self.kwargs,
                 ),
             )
-        elif self.format == DatasetStorageFormatType.PARQUET:
+        elif self.format == DatasetStorageFormatType.parquet:
             return cast(
                 "pd.DataFrame",
                 wr.s3.read_parquet(
@@ -73,7 +73,7 @@ class AwsWranglerDeserializer(DataDeserializer):
                     **self.kwargs,
                 ),
             )
-        elif self.format == DatasetStorageFormatType.JSON:
+        elif self.format == DatasetStorageFormatType.json:
             return cast(
                 "pd.DataFrame",
                 wr.s3.read_json(
@@ -82,7 +82,7 @@ class AwsWranglerDeserializer(DataDeserializer):
                     **self.kwargs,
                 ),
             )
-        elif self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
+        elif self.format == DatasetStorageFormatType.semi_structured_json:
             with BytesIO() as buffer:
                 wr.s3.download(
                     path=value,
@@ -91,13 +91,13 @@ class AwsWranglerDeserializer(DataDeserializer):
                 )
                 json_data = json.loads(buffer.getvalue().decode())
                 return pd.json_normalize(json_data, **self.kwargs)
-        elif self.format == DatasetStorageFormatType.EXCEL:
+        elif self.format == DatasetStorageFormatType.excel:
             return wr.s3.read_excel(
                 path=value,
                 boto3_session=boto3_session,
                 **self.kwargs,
             )
-        elif self.format == DatasetStorageFormatType.XML:
+        elif self.format == DatasetStorageFormatType.xml:
             with BytesIO() as buffer:
                 wr.s3.download(
                     path=value,

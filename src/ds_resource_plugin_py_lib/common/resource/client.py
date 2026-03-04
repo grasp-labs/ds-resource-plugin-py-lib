@@ -229,7 +229,7 @@ class ResourceClient:
         """
         try:
             type = config["type"]
-            version = config["version"]
+            version = sanitize_version(config["version"])
             model_cls = self._get_linked_service_model_cls(type, version)
             linked_service: LinkedService[Any] = model_cls.deserialize(config)
             return linked_service
@@ -253,7 +253,7 @@ class ResourceClient:
         """
         try:
             type = config["type"]
-            version = config["version"]
+            version = sanitize_version(config["version"])
             dataset_cls = self._get_dataset_model_cls(type, version)
             dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset
@@ -263,3 +263,20 @@ class ResourceClient:
                 message=f"Error deserializing dataset: {exc}",
                 details={"config": config, "error": str(exc)},
             ) from exc
+
+
+def sanitize_version(version: str) -> str:
+    """
+    Sanitize version string to ensure it follows a consistent format.
+    We can receive versions written as semver (v1.0.0)
+    or just the number (1.0.0). This function will strip any leading 'v' and whitespace.
+
+    Args:
+        version: The version string to sanitize.
+
+    Returns:
+        A sanitized version string.
+    """
+    # First remove surrounding whitespace, then strip any leading lowercase 'v'.
+    # Order matters because inputs like '  v1.2.3  ' should become '1.2.3'.
+    return version.strip().lstrip("v").strip()

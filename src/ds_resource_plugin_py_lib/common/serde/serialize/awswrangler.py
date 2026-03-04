@@ -49,31 +49,31 @@ class AwsWranglerSerializer(DataSerializer):
         if not boto3_session:
             raise ValueError("AWS boto3 Session is required.")
 
-        if self.format == DatasetStorageFormatType.CSV:
+        if self.format == DatasetStorageFormatType.csv:
             return wr.s3.to_csv(
                 obj,
                 boto3_session=boto3_session,
                 **self.kwargs,
             )
-        elif self.format == DatasetStorageFormatType.PARQUET:
+        elif self.format == DatasetStorageFormatType.parquet:
             return wr.s3.to_parquet(
                 obj,
                 boto3_session=boto3_session,
                 **self.kwargs,
             )
-        elif self.format == DatasetStorageFormatType.JSON:
+        elif self.format == DatasetStorageFormatType.json:
             return wr.s3.to_json(
                 obj,
                 boto3_session=boto3_session,
                 **self.kwargs,
             )
-        elif self.format == DatasetStorageFormatType.EXCEL:
+        elif self.format == DatasetStorageFormatType.excel:
             return wr.s3.to_excel(
                 obj,
                 boto3_session=boto3_session,
                 **self.kwargs,
             )
-        elif self.format == DatasetStorageFormatType.XML:
+        elif self.format == DatasetStorageFormatType.xml:
             return wr.s3.upload(
                 obj.to_xml(),
                 boto3_session=boto3_session,

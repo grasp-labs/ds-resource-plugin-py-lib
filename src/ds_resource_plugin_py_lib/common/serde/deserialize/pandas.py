@@ -59,14 +59,14 @@ class PandasDeserializer(DataDeserializer):
             value = io.StringIO(json.dumps(value))
 
         format_readers: dict[DatasetStorageFormatType, Callable[[Any], pd.DataFrame]] = {
-            DatasetStorageFormatType.CSV: lambda v: pd.read_csv(v, **self.kwargs),
-            DatasetStorageFormatType.PARQUET: lambda v: pd.read_parquet(v, **self.kwargs),
-            DatasetStorageFormatType.JSON: lambda v: pd.read_json(v, **self.kwargs),
-            DatasetStorageFormatType.EXCEL: lambda v: pd.read_excel(v, **self.kwargs),
-            DatasetStorageFormatType.XML: lambda v: pd.read_xml(v, **self.kwargs),
+            DatasetStorageFormatType.csv: lambda v: pd.read_csv(v, **self.kwargs),
+            DatasetStorageFormatType.parquet: lambda v: pd.read_parquet(v, **self.kwargs),
+            DatasetStorageFormatType.json: lambda v: pd.read_json(v, **self.kwargs),
+            DatasetStorageFormatType.excel: lambda v: pd.read_excel(v, **self.kwargs),
+            DatasetStorageFormatType.xml: lambda v: pd.read_xml(v, **self.kwargs),
         }
 
-        if self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
+        if self.format == DatasetStorageFormatType.semi_structured_json:
             if isinstance(value, io.BytesIO):
                 json_str = value.getvalue().decode("utf-8")
                 value = json.loads(json_str)

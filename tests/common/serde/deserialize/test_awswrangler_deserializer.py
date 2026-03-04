@@ -25,9 +25,9 @@ class TestAwsWranglerDeserializer:
     @pytest.mark.parametrize(
         ("format_type", "method_name"),
         [
-            (DatasetStorageFormatType.CSV, "read_csv"),
-            (DatasetStorageFormatType.PARQUET, "read_parquet"),
-            (DatasetStorageFormatType.JSON, "read_json"),
+            (DatasetStorageFormatType.csv, "read_csv"),
+            (DatasetStorageFormatType.parquet, "read_parquet"),
+            (DatasetStorageFormatType.json, "read_json"),
         ],
     )
     def test_tabular_formats(self, format_type, method_name, sample_dataframe, boto3_session):
@@ -54,7 +54,7 @@ class TestAwsWranglerDeserializer:
         with patch(
             "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.download", side_effect=fake_download
         ) as mock_download:
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.semi_structured_json)
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -68,7 +68,7 @@ class TestAwsWranglerDeserializer:
         with patch(
             "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.read_excel", return_value=sample_dataframe
         ) as mock_read:
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.EXCEL)
+            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.excel)
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -92,7 +92,7 @@ class TestAwsWranglerDeserializer:
                 "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.pd.read_xml", return_value=sample_dataframe
             ) as mock_read_xml,
         ):
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.XML)
+            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.xml)
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -102,7 +102,7 @@ class TestAwsWranglerDeserializer:
 
     def test_missing_boto3_session_raises(self):
         """Require boto3_session for all reads."""
-        deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.CSV)
+        deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.csv)
 
         with pytest.raises(ValueError, match=r"AWS boto3 Session is required\."):
             deserializer("s3://bucket/key")
