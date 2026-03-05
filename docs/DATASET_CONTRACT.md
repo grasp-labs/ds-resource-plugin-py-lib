@@ -38,6 +38,84 @@ must follow. These rules are universal -- no exceptions.
 
 ---
 
+## Schema and Dataclass Alignment
+
+The provider-facing schema used to create a dataset instance (for
+example JSON validated before `Dataset.deserialize(...)`) must stay in
+sync with the dataset dataclass fields.
+
+### Why this is critical
+
+The schema is the contract for user payload. The dataclass is the
+runtime model used by `deserialize()`. If these drift, payloads may
+validate but fail to construct, or construct with fields that should
+never be user-configurable.
+
+### Field categories
+
+Every dataset field must be classified as either exposed or internal.
+
+| Category | Intent | User payload | Dataclass guidance |
+| -------- | ------ | ------------ | ------------------ |
+| Exposed field | Caller configures this value. | Allowed | Keep as normal dataclass init field and include in schema. |
+| Internal field | Runtime detail. | Not allowed | Use `init=False`, `serialize=False`, and a default. |
+
+### Mandatory rules
+
+1. **Schema and exposed dataclass fields must match.**
+   - Every exposed field in the dataclass must be represented in schema.
+   - Every schema field must map to a dataclass field.
+2. **Internal fields must not be schema properties.**
+   - Never expose runtime-only fields (`connection`, caches, helper
+     instances that are internally constructed, clients, pools, etc.).
+   - `serializer`/`deserializer` are not inherently internal. Expose
+     them when caller configuration is part of the provider contract.
+     If internally handled, keep them payload-visible (so input may pass
+     `null` or a value) and finalize/override them in `__post_init__`.
+3. **Internal fields must not be user-initializable.**
+   - Set `init=False` so payload cannot pass those keys through
+     `deserialize()`.
+   - Do not use `init=False` for fields that are part of the external
+     payload contract.
+4. **Internal fields must remain safe at runtime.**
+   - Provide `default` or `default_factory` (or set in `__post_init__`)
+     so instances are always valid after construction.
+5. **Unknown schema keys must be rejected.**
+   - Use strict schema validation (`additionalProperties: false`) at
+     each object level to fail fast on unsupported keys.
+6. **Schema validity must imply constructability.**
+   - Any payload that passes the provider schema must construct the
+     dataclass successfully via `deserialize()` without runtime
+     construction errors.
+   - If a payload can pass schema validation but fail dataclass
+     construction, the schema and dataclass are out of sync and the
+     provider is non-compliant.
+
+### Construction guarantee
+
+Treat this as a hard compatibility guarantee between frontend/user
+payload and backend dataclass binding:
+
+- **Guarantee:** schema-valid payload -> successful dataclass
+  construction.
+- **Corollary:** dataclass changes that affect required/optional fields,
+  field types, or field names must be reflected in schema in the same
+  change.
+- **Verification:** providers should include a contract test that
+  validates representative schema-valid payloads and asserts
+  `Dataset.deserialize(payload)` succeeds.
+
+### Provider communication requirement
+
+Provider docs must clearly state which fields are user-facing config and
+which are internal implementation details. This must be explicit for the
+following field groups:
+
+- Top-level dataset fields (`id`, `name`, `version`, `settings`, etc.)
+- Nested settings fields
+- Inherited compatibility fields required by abstract/base classes that
+  are intentionally internal and not user-exposed
+
 ## Input Handling
 
 Methods that use `self.input` (`create`, `update`, `upsert`, `delete`)
