@@ -69,11 +69,14 @@ Every dataset field must be classified as either exposed or internal.
    - Never expose runtime-only fields (`connection`, caches, helper
      instances that are internally constructed, clients, pools, etc.).
    - `serializer`/`deserializer` are not inherently internal. Expose
-     them only when caller configuration is part of the provider
-     contract; keep them internal when the provider constructs them.
+     them when caller configuration is part of the provider contract.
+     If internally handled, keep them payload-visible (so input may pass
+     `null` or a value) and finalize/override them in `__post_init__`.
 3. **Internal fields must not be user-initializable.**
    - Set `init=False` so payload cannot pass those keys through
      `deserialize()`.
+   - Do not use `init=False` for fields that are part of the external
+     payload contract.
 4. **Internal fields must remain safe at runtime.**
    - Provide `default` or `default_factory` (or set in `__post_init__`)
      so instances are always valid after construction.
