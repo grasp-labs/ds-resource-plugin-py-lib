@@ -47,9 +47,7 @@ class TestAwsWranglerSerializer:
             "path": "s3://bucket/data.xml",
         }
         with patch(target, return_value="uploaded") as mock_upload:
-            serializer = AwsWranglerSerializer(
-                settings=DataFrameSerdeSettings(format=DatasetStorageFormatType.XML, kwargs=kwargs)
-            )
+            serializer = AwsWranglerSerializer(settings=DataFrameSerdeSettings(format=DatasetStorageFormatType.XML, kwargs=kwargs))
 
             result = serializer(sample_dataframe, boto3_session=boto3_session)
 
