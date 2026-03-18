@@ -8,8 +8,11 @@ Serialization and deserialization utilities.
 """
 
 from . import deserialize, serialize
+from .base import DataFrameSerdeSettings, SerdeSettings
 
 __all__ = [
+    "DataFrameSerdeSettings",
+    "SerdeSettings",
     "deserialize",
     "serialize",
 ]

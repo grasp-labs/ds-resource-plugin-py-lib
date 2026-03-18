@@ -16,6 +16,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
+from ds_resource_plugin_py_lib.common.serde.base import DataFrameSerdeSettings
 from ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler import AwsWranglerDeserializer
 
 
@@ -35,7 +36,7 @@ class TestAwsWranglerDeserializer:
         path = "s3://bucket/key"
         target = f"ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.{method_name}"
         with patch(target, return_value=sample_dataframe) as mock_reader:
-            deserializer = AwsWranglerDeserializer(format=format_type)
+            deserializer = AwsWranglerDeserializer(settings=DataFrameSerdeSettings(format=format_type))
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -54,7 +55,7 @@ class TestAwsWranglerDeserializer:
         with patch(
             "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.download", side_effect=fake_download
         ) as mock_download:
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.SEMI_STRUCTURED_JSON)
+            deserializer = AwsWranglerDeserializer(settings={"format": DatasetStorageFormatType.SEMI_STRUCTURED_JSON})
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -68,7 +69,7 @@ class TestAwsWranglerDeserializer:
         with patch(
             "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.read_excel", return_value=sample_dataframe
         ) as mock_read:
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.EXCEL)
+            deserializer = AwsWranglerDeserializer(settings=DataFrameSerdeSettings(format=DatasetStorageFormatType.EXCEL))
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -92,7 +93,7 @@ class TestAwsWranglerDeserializer:
                 "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.pd.read_xml", return_value=sample_dataframe
             ) as mock_read_xml,
         ):
-            deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.XML)
+            deserializer = AwsWranglerDeserializer(settings={"format": DatasetStorageFormatType.XML})
 
             result = deserializer(path, boto3_session=boto3_session)
 
@@ -110,7 +111,7 @@ class TestAwsWranglerDeserializer:
     def test_unsupported_format_raises(self, boto3_session):
         """Raise ValueError for unsupported formats."""
         bad_format = cast("DatasetStorageFormatType", "OTHER")
-        deserializer = AwsWranglerDeserializer(format=bad_format)
+        deserializer = AwsWranglerDeserializer(settings={"format": bad_format})
 
         with pytest.raises(ValueError, match="Unsupported format"):
             deserializer("s3://bucket/key", boto3_session=boto3_session)
