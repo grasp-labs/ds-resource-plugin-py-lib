@@ -204,7 +204,7 @@ The preferred representation is still to place static config under
 
 ## Call Contract
 
-### Serializers
+### Serializer Calls
 
 `__call__(obj, **kwargs)` performs serialization.
 
@@ -218,7 +218,7 @@ Examples of runtime-only kwargs:
 - request-scoped credentials/tokens
 - temporary output handles
 
-### Deserializers
+### Deserializer Calls
 
 `__call__(value, **kwargs)` performs deserialization.
 

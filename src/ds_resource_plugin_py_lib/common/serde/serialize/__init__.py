@@ -19,11 +19,11 @@ from .pandas import PandasSerializer
 
 __all__ = [
     "AWSWRANGLER_DATAFRAME_SERIALIZER_INFO",
-    "AwsWranglerSerializer",
     "BUILTIN_SERIALIZER_INFOS",
     "BUILTIN_SERIALIZER_VERSION",
-    "DataSerializer",
     "PANDAS_DATAFRAME_SERIALIZER_INFO",
+    "AwsWranglerSerializer",
+    "DataSerializer",
     "PandasSerializer",
     "SerializerInfo",
 ]

@@ -30,8 +30,8 @@ if TYPE_CHECKING:  # pragma: no cover
 import pandas as pd
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
-from ..base import DataFrameSerdeSettings
 from ...serde.deserialize.base import DataDeserializer
+from ..base import DataFrameSerdeSettings
 
 logger = Logger.get_logger(__name__, package=True)
 
