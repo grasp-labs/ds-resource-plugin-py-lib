@@ -18,9 +18,11 @@ Example
     print(client.resources.keys())
     print(client.linked_services.keys())
     print(client.datasets.keys())
+    print(client.serializers.keys())
 
     dataset = client.dataset(config={"type": "dataset.example", "version": "1.0.0"})
     linked_service = client.linked_service(config={"type": "linked_service.example", "version": "1.0.0"})
+    serializer = client.serializer(config={"type": "serializer.example", "version": "1.0.0"})
 
     linked_service.connect()
     print(linked_service.connection)
@@ -40,6 +42,8 @@ from ds_common_serde_py_lib.errors import DeserializationError
 from ...libs.utils.import_string import import_string
 from ..resource.dataset.base import Dataset, DatasetInfo
 from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
+from ..serde.serialize import BUILTIN_SERIALIZER_INFOS
+from ..serde.serialize.base import DataSerializer, SerializerInfo
 
 logger = Logger.get_logger(__name__, package=True)
 
@@ -53,11 +57,14 @@ class ResourceClient:
         self._resource_dict: dict[str, dict[str, Any]] = {}
         self._linked_services: dict[tuple[str, str], LinkedServiceInfo] = {}
         self._datasets: dict[tuple[str, str], DatasetInfo] = {}
+        self._serializers: dict[tuple[str, str], SerializerInfo] = {}
+        self._load_builtin_serializers()
         self._discover_resources(self.PROTOCOL_GROUP)
         self._discover_resources(self.PROVIDER_GROUP)
         logger.debug(f"Loaded {len(self._resource_dict)} resources")
         logger.debug(f"Loaded {len(self._linked_services)} linked services")
         logger.debug(f"Loaded {len(self._datasets)} datasets")
+        logger.debug(f"Loaded {len(self._serializers)} serializers")
 
     @classmethod
     @lru_cache(maxsize=1)
@@ -76,6 +83,15 @@ class ResourceClient:
     @property
     def datasets(self) -> dict[tuple[str, str], DatasetInfo]:
         return self._datasets
+
+    @property
+    def serializers(self) -> dict[tuple[str, str], SerializerInfo]:
+        return self._serializers
+
+    def _load_builtin_serializers(self) -> None:
+        """Register built-in serializers shipped with this library."""
+        for serializer_info in BUILTIN_SERIALIZER_INFOS:
+            self._serializers[serializer_info.key] = serializer_info
 
     def _discover_resources(self, group: str) -> None:
         """
@@ -140,6 +156,7 @@ class ResourceClient:
                 self._resource_dict[resource_name] = resource_config
                 self._parse_linked_services(resource_config)
                 self._parse_datasets(resource_config)
+                self._parse_serializers(resource_config)
         except Exception as exc:
             logger.error(f"Error loading resource configuration from {resource_yaml}: {exc}")
 
@@ -188,6 +205,28 @@ class ResourceClient:
                 )
                 self._datasets[dataset_info.key] = dataset_info
 
+    def _parse_serializers(self, config: dict[str, Any]) -> None:
+        """
+        Parse serializers from resource configuration.
+
+        Args:
+            config: Resource configuration dictionary.
+        """
+        serializers = config.get("serde", [])
+        for serializer in serializers:
+            serializer_name = serializer.get("name")
+            if serializer_name:
+                type = serializer.get("type")
+                version = serializer.get("version", "1.0.0")
+                serializer_info = SerializerInfo(
+                    type=type,
+                    name=serializer_name,
+                    class_name=serializer.get("class_name"),
+                    version=version,
+                    description=serializer.get("description"),
+                )
+                self._serializers[serializer_info.key] = serializer_info
+
     def _get_dataset_model_cls(self, _type: str, version: str) -> type[Dataset[Any, Any, Any, Any]]:
         """
         Get a dataset model class by type and optionally version.
@@ -215,6 +254,20 @@ class ResourceClient:
         cls_name = self.linked_services[(_type, version)].class_name
         logger.debug("Linked Service Class Name: %s", cls_name)
         return cast("type[LinkedService[Any]]", import_string(cls_name))
+
+    def _get_serializer_model_cls(self, _type: str, version: str) -> type[DataSerializer]:
+        """
+        Get a serializer model class by type and version.
+
+        Args:
+            _type: The type of the serializer.
+            version: str version of the serializer.
+        Returns:
+            Type[DataSerializer]
+        """
+        cls_name = self.serializers[(_type, version)].class_name
+        logger.debug("Serializer Class Name: %s", cls_name)
+        return cast("type[DataSerializer]", import_string(cls_name))
 
     def linked_service(self, config: dict[str, Any]) -> LinkedService[Any]:
         """
@@ -261,5 +314,33 @@ class ResourceClient:
             logger.error(f"Error deserializing dataset: {exc}")
             raise DeserializationError(
                 message=f"Error deserializing dataset: {exc}",
+                details={"config": config, "error": str(exc)},
+            ) from exc
+
+    def serializer(self, config: dict[str, Any]) -> DataSerializer:
+        """
+        Get a serializer instance by configuration.
+
+        Args:
+            config: dict containing at least 'type' and 'version'
+        Returns:
+            DataSerializer
+        Raises:
+            DeserializationError: If the serializer cannot be created.
+        """
+        try:
+            type = config["type"]
+            version = config["version"]
+            serializer_cls = self._get_serializer_model_cls(type, version)
+            serializer_kwargs = {key: value for key, value in config.items() if key not in {"type", "version"}}
+            if "settings" in serializer_kwargs:
+                serializer: DataSerializer = serializer_cls.deserialize(serializer_kwargs)
+            else:
+                serializer = serializer_cls(**serializer_kwargs)
+            return serializer
+        except (TypeError, KeyError) as exc:
+            logger.error(f"Error creating serializer: {exc}")
+            raise DeserializationError(
+                message=f"Error creating serializer: {exc}",
                 details={"config": config, "error": str(exc)},
             ) from exc

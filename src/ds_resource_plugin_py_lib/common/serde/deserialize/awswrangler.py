@@ -22,7 +22,7 @@ Example
 """
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, cast
 
@@ -31,6 +31,7 @@ import pandas as pd
 from ds_common_logger_py_lib import Logger
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
+from ..base import DataFrameSerdeSettings
 from ...serde.deserialize.base import DataDeserializer
 
 logger = Logger.get_logger(__name__, package=True)
@@ -38,8 +39,34 @@ logger = Logger.get_logger(__name__, package=True)
 
 @dataclass(kw_only=True)
 class AwsWranglerDeserializer(DataDeserializer):
-    format: DatasetStorageFormatType
-    kwargs: dict[str, Any] = field(default_factory=dict)
+    settings: DataFrameSerdeSettings
+
+    def __init__(
+        self,
+        *,
+        settings: DataFrameSerdeSettings | dict[str, Any] | None = None,
+        format: DatasetStorageFormatType | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        if settings is not None and (format is not None or kwargs is not None):
+            raise TypeError("Provide either settings or flat format/kwargs, not both.")
+
+        if settings is None:
+            if format is None:
+                raise TypeError("format is required when settings is not provided.")
+            settings = DataFrameSerdeSettings(format=format, kwargs=kwargs or {})
+        elif isinstance(settings, dict):
+            settings = DataFrameSerdeSettings(**settings)
+
+        super().__init__(settings=settings)
+
+    @property
+    def format(self) -> DatasetStorageFormatType:
+        return self.settings.format
+
+    @property
+    def kwargs(self) -> dict[str, Any]:
+        return self.settings.kwargs
 
     def __call__(self, value: Any, **kwargs: Any) -> pd.DataFrame:
         """

@@ -13,11 +13,32 @@ import pytest
 import yaml
 from ds_common_serde_py_lib.errors import DeserializationError
 
+from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
 from ds_resource_plugin_py_lib.common.resource.client import ResourceClient
+from ds_resource_plugin_py_lib.common.serde.serialize import PANDAS_DATAFRAME_SERIALIZER_INFO
+from ds_resource_plugin_py_lib.common.serde.serialize.pandas import PandasSerializer
 
 
 class TestInstanceCreation:
     """Test instance creation from config dictionaries."""
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    def test_builtin_pandas_serializer_creation(self, mock_entry_points):
+        """Built-in pandas serializer should be creatable by its finalized registered type."""
+        mock_entry_points.return_value = []
+
+        client = ResourceClient()
+
+        serializer = client.serializer(
+            {
+                "type": PANDAS_DATAFRAME_SERIALIZER_INFO.type,
+                "version": PANDAS_DATAFRAME_SERIALIZER_INFO.version,
+                "format": DatasetStorageFormatType.JSON,
+            }
+        )
+
+        assert isinstance(serializer, PandasSerializer)
+        assert serializer.format == DatasetStorageFormatType.JSON
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
@@ -108,6 +129,88 @@ class TestInstanceCreation:
         mock_dataset_class.deserialize.assert_called_once_with(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_serializer_creation(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_serializer_class,
+    ):
+        """Test creating serializer instance from config dict."""
+        ep = Mock()
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.return_value = mock_serializer_class
+
+        client = ResourceClient()
+
+        config = {
+            "type": "DS.RESOURCE.SERIALIZER.GRAPHQL_REQUEST",
+            "version": "1.0.0",
+            "format": "JSON",
+        }
+
+        serializer = client.serializer(config)
+
+        assert serializer is not None
+        mock_serializer_class.assert_called_once_with(format="JSON")
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_serializer_creation_with_settings(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_serializer_class,
+    ):
+        """Test creating serializer instance from nested settings config."""
+        ep = Mock()
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.return_value = mock_serializer_class
+
+        client = ResourceClient()
+
+        config = {
+            "type": "DS.RESOURCE.SERIALIZER.GRAPHQL_REQUEST",
+            "version": "1.0.0",
+            "settings": {"format": "JSON"},
+        }
+
+        serializer = client.serializer(config)
+
+        assert serializer is not None
+        mock_serializer_class.deserialize.assert_called_once_with({"settings": {"format": "JSON"}})
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     def test_linked_service_missing_type(self, mock_entry_points):
         """Test error handling when type is missing."""
         # Setup
@@ -136,6 +239,18 @@ class TestInstanceCreation:
         assert "type" in str(exc_info.value.details.get("error", ""))
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    def test_serializer_missing_type(self, mock_entry_points):
+        """Test error handling when serializer type is missing."""
+        mock_entry_points.return_value = []
+        client = ResourceClient()
+
+        config = {"version": "1.0.0", "format": "JSON"}
+
+        with pytest.raises(DeserializationError) as exc_info:
+            client.serializer(config)
+        assert "type" in str(exc_info.value.details.get("error", ""))
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     def test_linked_service_unknown_type(self, mock_entry_points):
         """Test error handling when type is not found."""
         # Setup
@@ -160,6 +275,17 @@ class TestInstanceCreation:
         # Execute & Assert
         with pytest.raises(DeserializationError):
             client.dataset(config)
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    def test_serializer_unknown_type(self, mock_entry_points):
+        """Test error handling when serializer type is not found."""
+        mock_entry_points.return_value = []
+        client = ResourceClient()
+
+        config = {"type": "DS.RESOURCE.SERIALIZER.UNKNOWN", "version": "1.0.0"}
+
+        with pytest.raises(DeserializationError):
+            client.serializer(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
@@ -248,3 +374,87 @@ class TestInstanceCreation:
             client.dataset(config)
 
         assert "Error deserializing dataset" in str(exc_info.value.message)
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_serializer_creation_error(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_serializer_class,
+    ):
+        """Test DeserializationError on serializer instantiation failure."""
+        ep = Mock()
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.return_value = mock_serializer_class
+        mock_serializer_class.side_effect = TypeError("Invalid config")
+
+        client = ResourceClient()
+
+        config = {
+            "type": "DS.RESOURCE.SERIALIZER.GRAPHQL_REQUEST",
+            "version": "1.0.0",
+            "format": "JSON",
+        }
+
+        with pytest.raises(DeserializationError) as exc_info:
+            client.serializer(config)
+
+        assert "Error creating serializer" in str(exc_info.value.message)
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_serializer_creation_error_with_settings(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_serializer_class,
+    ):
+        """Test DeserializationError on settings-based serializer creation failure."""
+        ep = Mock()
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.return_value = mock_serializer_class
+        mock_serializer_class.deserialize.side_effect = TypeError("Invalid config")
+
+        client = ResourceClient()
+
+        config = {
+            "type": "DS.RESOURCE.SERIALIZER.GRAPHQL_REQUEST",
+            "version": "1.0.0",
+            "settings": {"format": "JSON"},
+        }
+
+        with pytest.raises(DeserializationError) as exc_info:
+            client.serializer(config)
+
+        assert "Error creating serializer" in str(exc_info.value.message)
