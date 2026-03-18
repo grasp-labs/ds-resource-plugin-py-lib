@@ -65,7 +65,7 @@ Example:
 ```yaml
 serde:
   - name: EmploymentUpdateSerializer
-    type: ds.resource.serde.sdworx.employment-update
+    type: DS.RESOURCE.SERIALIZER.SDWORX.EMPLOYMENT_UPDATE
     version: 1.0.0
     description: Serializer for SD Worx EmploymentUpdateRequest XML format
     class_name: ds_provider_sdworx_py_lib.serde.employment_update.EmploymentUpdateSerializer
@@ -156,7 +156,7 @@ Example:
     }
   },
   "serializer": {
-    "type": "ds.resource.serde.sdworx.employment-update",
+    "type": "DS.RESOURCE.SERIALIZER.SDWORX.EMPLOYMENT_UPDATE",
     "version": "1.0.0",
     "settings": {
       "request_level_columns": ["CompanyNo", "EmployeeNo"],
