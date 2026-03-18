@@ -35,7 +35,7 @@ class DatasetStorageFormatType(StrEnum):
     CSV = "csv"
     JSON = "json"
     EXCEL = "excel"
-    SEMI_STRUCTURED_JSON = "semi_structured_json"
+    SEMI_STRUCTURED_JSON = "semi-structured-json"
     XML = "xml"
 
 
