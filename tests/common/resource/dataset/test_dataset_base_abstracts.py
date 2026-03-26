@@ -15,14 +15,13 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from ds_resource_plugin_py_lib.common.resource.dataset.base import (
-    DatasetSettings,
-    TabularDataset,
-)
+from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset, DatasetSettings, TabularDataset
 from ds_resource_plugin_py_lib.common.resource.dataset.enums import DatasetMethod
 from ds_resource_plugin_py_lib.common.resource.dataset.result import OperationInfo
+from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
 from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService, LinkedServiceSettings
 from ds_resource_plugin_py_lib.common.serde.deserialize.base import DataDeserializer
+from ds_resource_plugin_py_lib.common.serde.deserialize.pandas import PandasDeserializer
 from ds_resource_plugin_py_lib.common.serde.serialize.base import DataSerializer
 
 
@@ -96,6 +95,11 @@ class _ConcreteDataset(TabularDataset[_DummyLinkedService, _DummyDatasetSettings
 
     def close(self) -> None:
         pass
+
+
+@dataclass(kw_only=True)
+class _ConcreteDatasetWithPandasDeserializer(_ConcreteDataset):
+    deserializer: PandasDeserializer | None = None
 
 
 def _make_concrete() -> _ConcreteDataset:
@@ -227,3 +231,30 @@ class TestTrackResultDecorator:
         assert ds.operation.started_at is not None
         assert ds.operation.ended_at is not None
         assert ds.operation.duration_ms >= 0
+
+
+class TestDatasetSerdeDeserialization:
+    def test_nested_flat_deserializer_config_is_supported(self):
+        dataset = _ConcreteDatasetWithPandasDeserializer.deserialize(
+            {
+                "id": str(uuid.uuid4()),
+                "name": "concrete",
+                "version": "1.0.0",
+                "settings": {},
+                "linked_service": {
+                    "id": str(uuid.uuid4()),
+                    "name": "ls",
+                    "version": "1.0.0",
+                    "settings": {},
+                },
+                "deserializer": {
+                    "type": "DS.RESOURCE.DESERIALIZER.DATAFRAME.PANDAS",
+                    "version": "1.0.0",
+                    "format": DatasetStorageFormatType.JSON,
+                },
+            }
+        )
+
+        assert isinstance(dataset, Dataset)
+        assert isinstance(dataset.deserializer, PandasDeserializer)
+        assert dataset.deserializer.format == DatasetStorageFormatType.JSON

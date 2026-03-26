@@ -16,6 +16,7 @@ import pytest
 
 from ds_resource_plugin_py_lib.common.resource.dataset.base import Dataset
 from ds_resource_plugin_py_lib.common.resource.linked_service.base import LinkedService
+from ds_resource_plugin_py_lib.common.serde.serialize.base import DataSerializer
 
 
 @pytest.fixture
@@ -48,6 +49,15 @@ def graphql_resource_yaml():
                 "version": "1.0.0",
                 "description": "GRAPHQL linked service",
                 "class_name": "ds_protocol_graphql_py_lib.linked_service.graphql.GraphQLLinkedService",
+            }
+        ],
+        "serde": [
+            {
+                "name": "GRAPHQL_REQUEST",
+                "type": "DS.RESOURCE.SERIALIZER.GRAPHQL_REQUEST",
+                "version": "1.0.0",
+                "description": "GRAPHQL request serializer",
+                "class_name": "ds_protocol_graphql_py_lib.serde.graphql.GraphQLRequestSerializer",
             }
         ],
     }
@@ -85,6 +95,15 @@ def http_resource_yaml():
                 "class_name": "ds_protocol_http_py_lib.linked_service.http.HttpLinkedService",
             }
         ],
+        "serde": [
+            {
+                "name": "HTTP_REQUEST",
+                "type": "DS.RESOURCE.SERIALIZER.HTTP_REQUEST",
+                "version": "1.0.0",
+                "description": "HTTP request serializer",
+                "class_name": "ds_protocol_http_py_lib.serde.http.HttpRequestSerializer",
+            }
+        ],
     }
 
 
@@ -120,6 +139,16 @@ def mock_linked_service_class():
     """Create a mock LinkedService class with deserialize method."""
     mock_cls = Mock(spec=LinkedService)
     mock_instance = Mock(spec=LinkedService)
+    mock_cls.deserialize = Mock(return_value=mock_instance)
+    return mock_cls
+
+
+@pytest.fixture
+def mock_serializer_class():
+    """Create a mock DataSerializer class that can be instantiated with kwargs."""
+    mock_cls = Mock()
+    mock_instance = Mock(spec=DataSerializer)
+    mock_cls.return_value = mock_instance
     mock_cls.deserialize = Mock(return_value=mock_instance)
     return mock_cls
 
