@@ -28,8 +28,10 @@ if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Callable
 
 import pandas as pd
+from ds_common_serde_py_lib.errors import DeserializationError
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
+from ...serde.binary import deserialize_binary
 from ...serde.deserialize.base import DataDeserializer
 
 logger = Logger.get_logger(__name__, package=True)
@@ -48,37 +50,57 @@ class PandasDeserializer(DataDeserializer):
             **kwargs: Additional keyword arguments.
         Returns:
             A pandas DataFrame.
+
+        Raises:
+            DeserializationError: If deserialization fails.
         """
         logger.debug(f"PandasDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
 
-        if isinstance(value, bytes):
-            value = io.BytesIO(value)
-        elif isinstance(value, str):
-            value = io.StringIO(value)
-        elif isinstance(value, (dict, list)):
-            value = io.StringIO(json.dumps(value))
+        try:
+            format_readers: dict[DatasetStorageFormatType, Callable[[Any], pd.DataFrame]] = {
+                DatasetStorageFormatType.CSV: lambda v: pd.read_csv(v, **self.kwargs),
+                DatasetStorageFormatType.PARQUET: lambda v: pd.read_parquet(v, **self.kwargs),
+                DatasetStorageFormatType.JSON: lambda v: pd.read_json(v, **self.kwargs),
+                DatasetStorageFormatType.EXCEL: lambda v: pd.read_excel(v, **self.kwargs),
+                DatasetStorageFormatType.XML: lambda v: pd.read_xml(v, **self.kwargs),
+                DatasetStorageFormatType.BINARY: lambda v: deserialize_binary(
+                    v,
+                    column=self.kwargs.get("column", "binary"),
+                    encoding=self.kwargs.get("encoding"),
+                ),
+            }
 
-        format_readers: dict[DatasetStorageFormatType, Callable[[Any], pd.DataFrame]] = {
-            DatasetStorageFormatType.CSV: lambda v: pd.read_csv(v, **self.kwargs),
-            DatasetStorageFormatType.PARQUET: lambda v: pd.read_parquet(v, **self.kwargs),
-            DatasetStorageFormatType.JSON: lambda v: pd.read_json(v, **self.kwargs),
-            DatasetStorageFormatType.EXCEL: lambda v: pd.read_excel(v, **self.kwargs),
-            DatasetStorageFormatType.XML: lambda v: pd.read_xml(v, **self.kwargs),
-        }
+            if self.format != DatasetStorageFormatType.BINARY:
+                if isinstance(value, bytes):
+                    value = io.BytesIO(value)
+                elif isinstance(value, str):
+                    value = io.StringIO(value)
+                elif isinstance(value, (dict, list)):
+                    value = io.StringIO(json.dumps(value))
 
-        if self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
-            if isinstance(value, io.BytesIO):
-                json_str = value.getvalue().decode("utf-8")
-                value = json.loads(json_str)
-            elif isinstance(value, io.StringIO):
-                json_str = value.getvalue()
-                value = json.loads(json_str)
-            elif isinstance(value, str):
-                value = json.loads(value)
-            return pd.json_normalize(value, **self.kwargs)
+            if self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
+                if isinstance(value, io.BytesIO):
+                    json_str = value.getvalue().decode("utf-8")
+                    value = json.loads(json_str)
+                elif isinstance(value, io.StringIO):
+                    json_str = value.getvalue()
+                    value = json.loads(json_str)
+                elif isinstance(value, str):
+                    value = json.loads(value)
+                return pd.json_normalize(value, **self.kwargs)
 
-        reader = format_readers.get(self.format)
-        if reader:
-            return reader(value)
+            reader = format_readers.get(self.format)
+            if reader:
+                return reader(value)
 
-        raise ValueError(f"Unsupported format: {self.format}")
+            raise DeserializationError(
+                message=f"Unsupported format: {self.format}",
+                details={"format": str(self.format)},
+            )
+        except DeserializationError:
+            raise
+        except Exception as exc:
+            raise DeserializationError(
+                message=f"Failed to deserialize {self.format} data: {exc}",
+                details={"format": str(self.format), "error": str(exc)},
+            ) from exc

@@ -25,8 +25,10 @@ from typing import Any
 
 import pandas as pd
 from ds_common_logger_py_lib import Logger
+from ds_common_serde_py_lib.errors import SerializationError
 
 from ...resource.dataset.storage_format import DatasetStorageFormatType
+from ...serde.binary import serialize_binary
 from .base import DataSerializer
 
 logger = Logger.get_logger(__name__, package=True)
@@ -45,31 +47,56 @@ class PandasSerializer(DataSerializer):
             **kwargs: Additional keyword arguments.
         Returns:
             A value.
+
+        Raises:
+            SerializationError: If serialization fails.
         """
         logger.debug(f"PandasSerializer __call__ with format: {self.format} and args: {self.kwargs}")
-        if not isinstance(obj, pd.DataFrame):
-            raise TypeError(f"Expected pd.DataFrame, got {type(obj)}")
-        value = obj
-        default_float_format = "%.2f"
 
-        def _ensure_float_format() -> None:
-            if "float_format" not in self.kwargs:
-                self.kwargs["float_format"] = default_float_format
+        try:
+            if not isinstance(obj, pd.DataFrame):
+                raise SerializationError(
+                    message=f"Expected pd.DataFrame, got {type(obj)}",
+                    details={"format": str(self.format), "type": type(obj).__name__},
+                )
+            value = obj
+            default_float_format = "%.2f"
 
-        if self.format == DatasetStorageFormatType.CSV:
-            _ensure_float_format()
-            return value.to_csv(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.PARQUET:
-            return value.to_parquet(**self.kwargs)
-        elif self.format in (
-            DatasetStorageFormatType.JSON,
-            DatasetStorageFormatType.SEMI_STRUCTURED_JSON,
-        ):
-            return value.to_json(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.EXCEL:
-            _ensure_float_format()
-            return value.to_excel(**self.kwargs)
-        elif self.format == DatasetStorageFormatType.XML:
-            return value.to_xml(**self.kwargs)
-        else:
-            raise ValueError(f"Unsupported format: {self.format}")
+            def _ensure_float_format() -> None:
+                if "float_format" not in self.kwargs:
+                    self.kwargs["float_format"] = default_float_format
+
+            if self.format == DatasetStorageFormatType.CSV:
+                _ensure_float_format()
+                return value.to_csv(**self.kwargs)
+            elif self.format == DatasetStorageFormatType.PARQUET:
+                return value.to_parquet(**self.kwargs)
+            elif self.format in (
+                DatasetStorageFormatType.JSON,
+                DatasetStorageFormatType.SEMI_STRUCTURED_JSON,
+            ):
+                return value.to_json(**self.kwargs)
+            elif self.format == DatasetStorageFormatType.EXCEL:
+                _ensure_float_format()
+                return value.to_excel(**self.kwargs)
+            elif self.format == DatasetStorageFormatType.XML:
+                return value.to_xml(**self.kwargs)
+            elif self.format == DatasetStorageFormatType.BINARY:
+                return serialize_binary(
+                    value,
+                    column=self.kwargs.get("column", "binary"),
+                    row=self.kwargs.get("row", 0),
+                    encoding=self.kwargs.get("encoding"),
+                )
+            else:
+                raise SerializationError(
+                    message=f"Unsupported format: {self.format}",
+                    details={"format": str(self.format)},
+                )
+        except SerializationError:
+            raise
+        except Exception as exc:
+            raise SerializationError(
+                message=f"Failed to serialize {self.format} data: {exc}",
+                details={"format": str(self.format), "error": str(exc)},
+            ) from exc
