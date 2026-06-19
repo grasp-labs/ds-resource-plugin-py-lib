@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from ds_common_serde_py_lib.errors import SerializationError
 
 from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
 from ds_resource_plugin_py_lib.common.serde.serialize.pandas import PandasSerializer
@@ -25,7 +26,7 @@ class TestPandasSerializer:
         """Raise TypeError when input is not a DataFrame."""
         serializer = PandasSerializer(format=DatasetStorageFormatType.CSV)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(SerializationError):
             serializer(["not", "a", "dataframe"])
 
     def test_csv_sets_default_float_format(self, sample_dataframe):
@@ -63,15 +64,20 @@ class TestPandasSerializer:
         """Serialize DataFrame to XML."""
         serializer = PandasSerializer(format=DatasetStorageFormatType.XML, kwargs={"index": False})
 
-        xml_output = serializer(sample_dataframe)
+        with patch(
+            "ds_resource_plugin_py_lib.common.serde.serialize.pandas.pd.DataFrame.to_xml",
+            return_value="<data><row><id>1</id></row></data>",
+        ) as to_xml:
+            xml_output = serializer(sample_dataframe)
 
+        to_xml.assert_called_once_with(index=False)
         assert "<id>1</id>" in xml_output
 
     def test_unsupported_format_raises(self, sample_dataframe):
         """Raise ValueError for unsupported format."""
         serializer = PandasSerializer(format=cast("DatasetStorageFormatType", "OTHER"))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(SerializationError):
             serializer(sample_dataframe)
 
     def test_parquet_serialization(self, sample_dataframe, boto3_session):
@@ -86,3 +92,38 @@ class TestPandasSerializer:
             result = serializer(sample_dataframe, **kwargs)
         to_parquet.assert_called_once()
         assert result == "parquet"
+
+    def test_binary_serialization_default(self):
+        """Extract binary from the default column and row."""
+        payload = b"binary-payload"
+        df = pd.DataFrame({"binary": [payload]})
+        serializer = PandasSerializer(format=DatasetStorageFormatType.BINARY)
+
+        result = serializer(df)
+
+        assert result == payload
+
+    def test_binary_serialization_custom_column_and_row(self):
+        """Extract binary using custom column and row kwargs."""
+        payload = b"selected"
+        df = pd.DataFrame({"content": [b"other", payload]})
+        serializer = PandasSerializer(
+            format=DatasetStorageFormatType.BINARY,
+            kwargs={"column": "content", "row": 1},
+        )
+
+        result = serializer(df)
+
+        assert result == payload
+
+    def test_binary_serialization_with_encoding(self):
+        """Encode str cell values when encoding kwargs are provided."""
+        df = pd.DataFrame({"content": ["hello"]})
+        serializer = PandasSerializer(
+            format=DatasetStorageFormatType.BINARY,
+            kwargs={"column": "content", "encoding": "utf-8"},
+        )
+
+        result = serializer(df)
+
+        assert result == b"hello"

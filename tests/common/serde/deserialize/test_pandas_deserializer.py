@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from ds_common_serde_py_lib.errors import DeserializationError
 from pandas.testing import assert_frame_equal
 
 from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
@@ -56,7 +57,7 @@ class TestPandasDeserializer:
         bad_format = cast("DatasetStorageFormatType", "OTHER")
         deserializer = PandasDeserializer(format=bad_format)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DeserializationError):
             deserializer("value")
 
     def test_semi_structured_handles_bytes_io(self, semi_structured_json):
@@ -128,3 +129,35 @@ class TestPandasDeserializer:
 
         expected = pd.json_normalize(semi_structured_json)
         assert_frame_equal(result, expected)
+
+    def test_binary_bytes_to_dataframe(self):
+        """Wrap raw bytes in a single-row DataFrame."""
+        payload = b"binary-payload"
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.BINARY)
+
+        result = deserializer(payload)
+
+        assert_frame_equal(result, pd.DataFrame({"binary": [payload]}))
+
+    def test_binary_custom_column(self):
+        """Use kwargs column when wrapping binary input."""
+        payload = b"binary-payload"
+        deserializer = PandasDeserializer(
+            format=DatasetStorageFormatType.BINARY,
+            kwargs={"column": "content"},
+        )
+
+        result = deserializer(payload)
+
+        assert_frame_equal(result, pd.DataFrame({"content": [payload]}))
+
+    def test_binary_str_with_encoding(self):
+        """Encode str input when encoding kwargs are provided."""
+        deserializer = PandasDeserializer(
+            format=DatasetStorageFormatType.BINARY,
+            kwargs={"encoding": "utf-8"},
+        )
+
+        result = deserializer("hello")
+
+        assert_frame_equal(result, pd.DataFrame({"binary": [b"hello"]}))

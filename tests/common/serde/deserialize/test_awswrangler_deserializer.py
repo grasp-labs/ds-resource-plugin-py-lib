@@ -13,6 +13,7 @@ from unittest.mock import ANY, patch
 
 import pandas as pd
 import pytest
+from ds_common_serde_py_lib.errors import DeserializationError
 from pandas.testing import assert_frame_equal
 
 from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
@@ -104,7 +105,7 @@ class TestAwsWranglerDeserializer:
         """Require boto3_session for all reads."""
         deserializer = AwsWranglerDeserializer(format=DatasetStorageFormatType.CSV)
 
-        with pytest.raises(ValueError, match=r"AWS boto3 Session is required\."):
+        with pytest.raises(DeserializationError, match=r"AWS boto3 Session is required\."):
             deserializer("s3://bucket/key")
 
     def test_unsupported_format_raises(self, boto3_session):
@@ -112,5 +113,27 @@ class TestAwsWranglerDeserializer:
         bad_format = cast("DatasetStorageFormatType", "OTHER")
         deserializer = AwsWranglerDeserializer(format=bad_format)
 
-        with pytest.raises(ValueError, match="Unsupported format"):
+        with pytest.raises(DeserializationError, match="Unsupported format"):
             deserializer("s3://bucket/key", boto3_session=boto3_session)
+
+    def test_binary_format(self, boto3_session):
+        """Download binary and wrap it in a single-row DataFrame."""
+        path = "s3://bucket/data.bin"
+        payload = b"binary-payload"
+
+        def fake_download(path, boto3_session, local_file):
+            local_file.write(payload)
+            local_file.seek(0)
+
+        with patch(
+            "ds_resource_plugin_py_lib.common.serde.deserialize.awswrangler.wr.s3.download", side_effect=fake_download
+        ) as mock_download:
+            deserializer = AwsWranglerDeserializer(
+                format=DatasetStorageFormatType.BINARY,
+                kwargs={"column": "content"},
+            )
+
+            result = deserializer(path, boto3_session=boto3_session)
+
+            assert_frame_equal(result, pd.DataFrame({"content": [payload]}))
+            mock_download.assert_called_once_with(path=path, boto3_session=boto3_session, local_file=ANY)

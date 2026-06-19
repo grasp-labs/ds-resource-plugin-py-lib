@@ -10,7 +10,9 @@ Tests for `AwsWranglerSerializer` covering supported formats and validation.
 from typing import cast
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
+from ds_common_serde_py_lib.errors import SerializationError
 
 from ds_resource_plugin_py_lib.common.resource.dataset.storage_format import DatasetStorageFormatType
 from ds_resource_plugin_py_lib.common.serde.serialize.awswrangler import AwsWranglerSerializer
@@ -45,7 +47,13 @@ class TestAwsWranglerSerializer:
         kwargs = {
             "path": "s3://bucket/data.xml",
         }
-        with patch(target, return_value="uploaded") as mock_upload:
+        with (
+            patch(
+                "ds_resource_plugin_py_lib.common.serde.serialize.awswrangler.pd.DataFrame.to_xml",
+                return_value="<data/>",
+            ),
+            patch(target, return_value="uploaded") as mock_upload,
+        ):
             serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.XML, kwargs=kwargs)
 
             result = serializer(sample_dataframe, boto3_session=boto3_session)
@@ -57,12 +65,35 @@ class TestAwsWranglerSerializer:
         """Require boto3_session for all writes."""
         serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.CSV)
 
-        with pytest.raises(ValueError, match=r"AWS boto3 Session is required\."):
+        with pytest.raises(SerializationError, match=r"AWS boto3 Session is required\."):
             serializer(sample_dataframe)
 
     def test_unsupported_format_raises(self, sample_dataframe, boto3_session):
         """Raise ValueError for unsupported formats."""
         serializer = AwsWranglerSerializer(format=cast("DatasetStorageFormatType", "OTHER"))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(SerializationError):
             serializer(sample_dataframe, boto3_session=boto3_session)
+
+    def test_binary_uploads_bytes(self, boto3_session):
+        """Extract binary from DataFrame and upload via awswrangler.s3.upload."""
+        payload = b"binary-payload"
+        df = pd.DataFrame({"content": [payload]})
+        target = "ds_resource_plugin_py_lib.common.serde.serialize.awswrangler.wr.s3.upload"
+        kwargs = {
+            "column": "content",
+            "row": 0,
+            "path": "s3://bucket/data.bin",
+        }
+
+        with patch(target, return_value="uploaded") as mock_upload:
+            serializer = AwsWranglerSerializer(format=DatasetStorageFormatType.BINARY, kwargs=kwargs)
+
+            result = serializer(df, boto3_session=boto3_session)
+
+            assert result == "uploaded"
+            mock_upload.assert_called_once_with(
+                payload,
+                boto3_session=boto3_session,
+                path="s3://bucket/data.bin",
+            )
