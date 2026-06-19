@@ -69,7 +69,7 @@ class TestAwsWranglerSerializer:
             serializer(sample_dataframe)
 
     def test_unsupported_format_raises(self, sample_dataframe, boto3_session):
-        """Raise ValueError for unsupported formats."""
+        """Raise SerializationError for unsupported formats."""
         serializer = AwsWranglerSerializer(format=cast("DatasetStorageFormatType", "OTHER"))
 
         with pytest.raises(SerializationError):
