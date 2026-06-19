@@ -23,7 +23,7 @@ class TestPandasSerializer:
     """Validate PandasSerializer behaviors across formats."""
 
     def test_rejects_non_dataframe(self):
-        """Raise TypeError when input is not a DataFrame."""
+        """Raise SerializationError when input is not a DataFrame."""
         serializer = PandasSerializer(format=DatasetStorageFormatType.CSV)
 
         with pytest.raises(SerializationError):
