@@ -74,7 +74,7 @@ class TestPandasSerializer:
         assert "<id>1</id>" in xml_output
 
     def test_unsupported_format_raises(self, sample_dataframe):
-        """Raise ValueError for unsupported format."""
+        """Raise SerializationError for unsupported format."""
         serializer = PandasSerializer(format=cast("DatasetStorageFormatType", "OTHER"))
 
         with pytest.raises(SerializationError):
