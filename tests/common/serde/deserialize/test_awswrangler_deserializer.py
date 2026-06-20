@@ -109,7 +109,7 @@ class TestAwsWranglerDeserializer:
             deserializer("s3://bucket/key")
 
     def test_unsupported_format_raises(self, boto3_session):
-        """Raise ValueError for unsupported formats."""
+        """Raise DeserializationError for unsupported formats."""
         bad_format = cast("DatasetStorageFormatType", "OTHER")
         deserializer = AwsWranglerDeserializer(format=bad_format)
 

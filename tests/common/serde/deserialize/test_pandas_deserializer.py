@@ -53,7 +53,7 @@ class TestPandasDeserializer:
         assert_frame_equal(result, expected)
 
     def test_unsupported_format_raises(self):
-        """Raise ValueError when format is unsupported."""
+        """Raise DeserializationError when format is unsupported."""
         bad_format = cast("DatasetStorageFormatType", "OTHER")
         deserializer = PandasDeserializer(format=bad_format)
 
