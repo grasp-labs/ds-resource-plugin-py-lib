@@ -117,7 +117,7 @@ def serialize_binary(
             )
         try:
             return value.encode(encoding)
-        except UnicodeEncodeError as exc:
+        except (UnicodeEncodeError, LookupError) as exc:
             raise SerializationError(
                 message=f"Failed to encode text in column '{column}' with {encoding!r}: {exc}",
                 details={"column": column, "row": row, "encoding": encoding, "error": str(exc)},
