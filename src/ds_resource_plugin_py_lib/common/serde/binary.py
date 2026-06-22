@@ -57,7 +57,7 @@ def deserialize_binary(
             )
         try:
             data = value.encode(encoding)
-        except UnicodeEncodeError as exc:
+        except (UnicodeEncodeError, LookupError) as exc:
             raise DeserializationError(
                 message=f"Failed to encode text input with {encoding!r}: {exc}",
                 details={"column": column, "encoding": encoding, "error": str(exc)},
