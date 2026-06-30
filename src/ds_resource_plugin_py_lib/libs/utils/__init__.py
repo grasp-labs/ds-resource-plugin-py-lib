@@ -8,6 +8,7 @@ Internal shared libraries used by this package (utilities).
 """
 
 from .import_string import import_string
+from .json_default import json_default
 from .sanitize import sanitize_version
 
-__all__ = ["import_string", "sanitize_version"]
+__all__ = ["import_string", "json_default", "sanitize_version"]

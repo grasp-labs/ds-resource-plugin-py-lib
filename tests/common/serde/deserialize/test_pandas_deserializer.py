@@ -9,6 +9,7 @@ Tests for `PandasDeserializer` covering formats and edge cases.
 
 import io
 import json
+from datetime import datetime
 from typing import cast
 from unittest.mock import patch
 
@@ -41,6 +42,16 @@ class TestPandasDeserializer:
         result = deserializer(json_string)
 
         expected = pd.read_json(io.StringIO(json_string))
+        assert_frame_equal(result.reset_index(drop=True), expected)
+
+    def test_json_dict_with_datetime(self):
+        """Dict/list input with datetime values should not crash during json encoding."""
+        payload = [{"id": 1, "created_at": datetime(2024, 3, 15, 10, 30, 0)}]
+        deserializer = PandasDeserializer(format=DatasetStorageFormatType.JSON)
+
+        result = deserializer(payload)
+
+        expected = pd.read_json(io.StringIO('[{"id":1,"created_at":"2024-03-15T10:30:00"}]'))
         assert_frame_equal(result.reset_index(drop=True), expected)
 
     def test_semi_structured_json_normalization(self, semi_structured_json):
