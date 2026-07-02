@@ -33,7 +33,9 @@ def json_default(value: Any) -> Any:
     ``default`` callback for :func:`json.dumps`.
 
     Maps common Python types (for example ``datetime``) to JSON-serializable
-    values. Unknown types raise :class:`TypeError`, matching stdlib behavior.
+    values. Scalar-like objects with a callable ``.item()`` (for example numpy
+    scalars) are unwrapped before encoding. Unknown types raise
+    :class:`TypeError`, matching stdlib behavior.
 
     ``bytes`` and ``bytearray`` are intentionally not converted: JSON has no binary
     type, and decoding bytes as text would silently change the data.
@@ -54,7 +56,11 @@ def json_default(value: Any) -> Any:
         return list(value)
 
     item = getattr(value, "item", None)
-    if callable(item) and type(value).__module__.startswith(("numpy", "pandas")):
-        return json_default(item())
+    if callable(item):
+        native = item()
+        try:
+            return json_default(native)
+        except TypeError:
+            return native
 
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
