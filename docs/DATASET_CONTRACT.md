@@ -215,16 +215,60 @@ rely on it for logging, auditing, or downstream processing.
 
 ### `self.checkpoint`
 
-An opaque `dict[str, Any]` for incremental/delta load support. The
-pipeline orchestrator manages persistence; the provider manages content.
+**What it is.** The checkpoint is persisted **runtime state** for
+incremental reads and, when the provider supports it, resumable in-run
+traversal after failure. In code it is `self.checkpoint` -- typically
+`dict[str, Any]`, opaque to generic tooling.
 
-- **Empty dict** (`{}`) signals a full load.
-- **Populated dict** signals an incremental load -- the provider reads
-  only data that is new or changed since the checkpoint.
-- The provider updates `self.checkpoint` after a successful operation
-  so the next run can continue from where it left off.
+**Instruction vs state.** Do not mix definition with checkpoint.
+**Dataset definition** (instruction) is static behaviour for the
+resource: read pattern, incremental *strategy*, pagination *mechanism*,
+and how they map to the source. **`self.settings`** define the **scope**
+of a given run -- which resources, paths, or filters bound *this*
+execution within that definition. **State** is where execution is: the
+incremental lower bound (watermark) for the next run and, when needed,
+the current pagination position for retry within a slice. Static
+instruction and run scope **must not** be duplicated inside the
+checkpoint.
+
+**What belongs in the checkpoint.** Values needed to resume without
+skipping or duplicating data per the provider's contract with the source
+-- for example the last committed incremental high-watermark and, if
+applicable, the last pagination cursor after a failed or partial run.
+Strategy names, scope, and field names belong in the dataset definition
+and settings, not repeated here.
+
+**Lifecycle (conceptual).** Exact keys are **not** standardized; providers
+choose shapes that round-trip with their APIs.
+
+- **On start** -- load checkpoint; use incremental state as the lower
+  bound; initialize or clear pagination state for a new run or resume.
+- **During `read()`** -- advance pagination state as the provider walks
+  the source; **do not** advance the incremental watermark until the read
+  completes successfully end-to-end.
+- **On failure** -- persist so incremental state is **unchanged** and
+  pagination reflects the last safe position if mid-run resume is
+  supported.
+- **On success** -- persist a new incremental high-watermark (or
+  equivalent) and clear or reset pagination state for the next run.
+
+- **Empty dict** (`{}`) signals a full load (no prior watermark).
+- **Populated dict** supplies incremental and, if applicable,
+  pagination state so the provider can continue without duplicating or
+  skipping work per that provider's rules.
+- The provider updates `self.checkpoint` according to the rules above
+  (e.g. new watermark after full success; optional pagination position on
+  failure if supported).
 - The base class does not read, write, or persist the checkpoint.
   It only defines the field.
+
+| Concept | Role |
+| ------- | ---- |
+| `self.settings` | Scope of the run -- what this execution reads |
+| Dataset definition | Instruction -- strategy, mechanisms, mapping to the source |
+| Checkpoint | State -- watermark, optional pagination position when persisted |
+| Incremental | Strategy in definition; watermark value in checkpoint |
+| Pagination | Mechanism in definition; traversal position in checkpoint when persisted |
 
 | Responsibility      | Actor                          |
 | ------------------- | ------------------------------ |
@@ -251,21 +295,21 @@ If `supports_checkpoint` is `False` and the caller sets
 **Checkpoint vs settings:**
 
 `self.settings` and `self.checkpoint` are not interchangeable.
-Settings define the static scope of the operation -- they are
-configured once and do not change between runs. Checkpoint tracks
-the moving position within that scope -- it advances after each
-successful operation.
+**Settings** define **scope** -- which resources or filters bound this
+run, stable for the configured dataset. **Checkpoint** holds **state**
+-- where to resume within that scope. Incremental *strategy* (how
+watermarks apply) lives in the **dataset definition**, not in the
+checkpoint. Do not duplicate definition or scope inside the checkpoint.
 
 | Concern          | Field             | Mutates at runtime |
 | ---------------- | ----------------- | ------------------ |
-| What to read     | `self.settings`   | No                 |
+| Scope of the run | `self.settings`   | No                 |
 | Where to resume  | `self.checkpoint` | Yes                |
 
-When both apply to the same dimension (e.g. a `last_modified`
-filter in settings and a `last_modified` cursor in checkpoint),
-they compose: settings define the lower bound, checkpoint narrows
-further within it. The provider is responsible for combining them
-correctly.
+The provider composes scope (`self.settings`), static instruction
+(dataset definition), and checkpoint values correctly for the source
+API (e.g. a timestamp watermark in checkpoint against a time field named
+in the definition).
 
 **Example lifecycle:**
 
@@ -279,7 +323,7 @@ if ds.supports_checkpoint:
     state_store.save(ds.id, ds.checkpoint)
 ```
 
-The checkpoint content is provider-specific and opaque to the caller.
+The checkpoint content is provider-specific and opaque to generic callers.
 
 ### `self.operation` after each method
 
@@ -414,8 +458,55 @@ Read data from the source and assign it to `self.output`.
 | Attribute         | Description                                       |
 | ----------------- | ------------------------------------------------- |
 | `self.output`     | The provider assigns the result here (DataFrame). |
-| `self.settings`   | Controls what and how to read.                    |
-| `self.checkpoint` | Incremental state (see below).                    |
+| `self.settings`   | Scope of the read (what this run covers).         |
+| `self.checkpoint` | Incremental and optional pagination state (see **`self.checkpoint`** above). |
+
+**Read pattern (instruction).** How rows are produced for `self.output`
+is part of the dataset definition, not encoded ad hoc in checkpoint
+values:
+
+- **Direct** -- the source returns final rows; the provider maps them
+  into `self.output` (subject to settings).
+- **Delta** -- the source returns changes only; the provider (or
+  downstream logic) resolves them into the rows represented in
+  `self.output`.
+
+**Incremental** and **pagination** are separate concerns: incremental
+defines the **dataset boundary** across runs ("what counts as new since
+last success"); pagination defines **traversal** within one read of that
+boundary. Do not conflate them.
+
+**Incremental (dataset boundary).**
+
+| Aspect | Scope / definition (stable) | State (`self.checkpoint`) |
+| --- | --- | --- |
+| **Incremental** | Scope: **`self.settings`**. Strategy: **dataset definition**. | Watermark (next run). |
+
+Run scope is *which* data this execution targets; strategy is *how* the
+incremental bound is expressed (e.g. time field, token, version, none).
+The strategy must map to a valid query or filter form for the source API.
+Watermark **state** advances **only after a full successful** `read()`;
+it **does not** advance on partial failure mid-run. On failure and retry
+it **stays unchanged** so the run can resume without skipping or
+duplicating data relative to the source contract. Prefer **one**
+incremental strategy per dataset.
+
+**Pagination (traversal).**
+
+| Aspect | Scope / definition (stable) | State (`self.checkpoint`) |
+| --- | --- | --- |
+| **Pagination** | **Mechanism:** **dataset definition** (cursor, page, offset, none). | **Traversal**; transient; may persist. |
+
+Mechanism is how partial results are walked; **state** is the position
+within the current incremental slice (e.g. next page token).
+
+Use pagination **state** whenever the source returns partial batches and
+the provider must issue further requests to finish the read. Pagination
+is **scoped to the current incremental window**: when the incremental
+watermark advances after **success**, pagination **resets** for the next
+run (do not carry an old token across a new watermark without explicit
+provider logic). Pagination **may** update on every internal request; the
+incremental watermark **must not** advance until the full read succeeds.
 
 **Rules:**
 
@@ -430,9 +521,10 @@ Read data from the source and assign it to `self.output`.
 
 **Scope is determined by `self.settings`:**
 
-What to read -- single resource or collection -- is a setting, not a
-different method. The provider reads whatever the settings describe
-and exhausts it completely:
+Scope is *which* data this run targets -- single resource or collection,
+filters, prefixes -- not the incremental strategy (that is dataset
+definition). The provider reads whatever the settings describe and
+exhausts it completely:
 
 | Setting pattern                           | Provider behaviour              |
 | ----------------------------------------- | ------------------------------- |
@@ -441,26 +533,34 @@ and exhausts it completely:
 | Paginated endpoint                        | Follow all pages to exhaustion  |
 | Filtered (WHERE clause, query params)     | Read matching subset completely |
 
-**Pagination within a single call is internal:**
+**Pagination and the abstract `read()` surface:**
 
 If the backend requires multiple requests (paginated API, chunked
-query, file listing), the provider handles iteration internally.
-Page tokens and offsets used to exhaust a single read must not leak
-into the abstract interface. The caller sees one `read()` call and
-one complete DataFrame in `self.output`.
+query, file listing), the provider handles iteration inside `read()`.
+The caller always sees one `read()` invocation and one completed
+`self.output` on success. Pagination tokens or offsets are not part of
+the abstract method signature.
 
-**Incremental / delta loads via `self.checkpoint`:**
+The orchestrator may still persist pagination-related **state** in
+`self.checkpoint` to resume after failure; that is runtime state for
+robustness, not a second public API on the dataset (see
+**`self.checkpoint`**).
+
+**Using `self.checkpoint` in `read()`:**
 
 When `self.checkpoint` is empty (`{}`), the provider performs a full
-load. When it contains state from a previous run, the provider reads
-only data that is new or changed since that checkpoint. After a
-successful read, the provider updates `self.checkpoint` with the new
-position so the caller can persist it for the next run.
+load (subject to settings). When it contains state from a prior attempt
+or run, the provider applies incremental and optional pagination state
+per the rules in this subsection and **`self.checkpoint`**. After a
+**successful** read, the provider updates `self.checkpoint` so the caller
+can persist it.
 
-| `self.checkpoint`    | Provider behaviour                           |
-| -------------------- | -------------------------------------------- |
-| `{}`                 | Full load -- read everything.                |
-| `{"cursor": "abc"}`  | Incremental -- read from cursor onward.      |
+Loose illustration only -- keys are not standardized:
+
+| `self.checkpoint` (example) | Typical intent |
+| ----------------------------- | -------------- |
+| `{}`                          | Full load.     |
+| Non-empty dict                | Resume / incremental lower bound and optional traversal state. |
 
 Support for incremental loads is optional. Providers that do not
 support it simply ignore `self.checkpoint`.
@@ -668,10 +768,11 @@ Clean up the connection to the backend.
   on every tracked method call (all methods except `close()`). Row
   counts are available via `self.operation.row_count`.
 
-- **`self.checkpoint`** is a `dict[str, Any]` for incremental/delta
-  load state. The caller persists it between runs; the provider reads
-  and updates it. An empty dict means full load. Providers declare
-  support via the `supports_checkpoint` property.
+- **`self.checkpoint`** is runtime **state** (incremental watermark and
+  optional resumable pagination position), not static configuration.
+  The caller persists it; the provider reads and updates it as described
+  under **`self.checkpoint`**. An empty dict means full load. Providers
+  declare support via the `supports_checkpoint` property.
 
 - **Yes\*** (idempotent) for `read()` means idempotent for full loads.
   Incremental reads depend on `self.checkpoint` and the source, so
