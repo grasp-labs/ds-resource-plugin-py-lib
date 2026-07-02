@@ -37,6 +37,7 @@ class DatasetStorageFormatType(StrEnum):
     EXCEL = "excel"
     SEMI_STRUCTURED_JSON = "semi-structured-json"
     XML = "xml"
+    BINARY = "binary"
 
 
 @dataclass(kw_only=True)
@@ -71,3 +72,9 @@ class SemiStructuredJsonFormat(DatasetStorageFormat):
 class XMLFormat(DatasetStorageFormat):
     type: DatasetStorageFormatType = DatasetStorageFormatType.XML
     args: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(kw_only=True)
+class BinaryFormat(DatasetStorageFormat):
+    type: DatasetStorageFormatType = DatasetStorageFormatType.BINARY
+    args: dict[str, Any] = field(default_factory=lambda: {"column": "binary", "row": 0})

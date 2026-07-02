@@ -29,8 +29,10 @@ from typing import Any, cast
 import awswrangler as wr
 import pandas as pd
 from ds_common_logger_py_lib import Logger
+from ds_common_serde_py_lib.errors import DeserializationError
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
+from ...serde.binary import deserialize_binary
 from ...serde.deserialize.base import DataDeserializer
 
 logger = Logger.get_logger(__name__, package=True)
@@ -49,61 +51,92 @@ class AwsWranglerDeserializer(DataDeserializer):
             **kwargs: Additional keyword arguments.
         Returns:
             A pandas DataFrame.
+
+        Raises:
+            DeserializationError: If deserialization fails.
         """
         logger.debug(f"AwsWranglerDeserializer __call__ with format: {self.format} and args: {self.kwargs}")
-        boto3_session = kwargs.get("boto3_session")
-        if not boto3_session:
-            raise ValueError("AWS boto3 Session is required.")
 
-        if self.format == DatasetStorageFormatType.CSV:
-            return cast(
-                "pd.DataFrame",
-                wr.s3.read_csv(
-                    path=value,
-                    boto3_session=boto3_session,
-                    **self.kwargs,
-                ),
-            )
-        elif self.format == DatasetStorageFormatType.PARQUET:
-            return cast(
-                "pd.DataFrame",
-                wr.s3.read_parquet(
-                    path=value,
-                    boto3_session=boto3_session,
-                    **self.kwargs,
-                ),
-            )
-        elif self.format == DatasetStorageFormatType.JSON:
-            return cast(
-                "pd.DataFrame",
-                wr.s3.read_json(
-                    path=value,
-                    boto3_session=boto3_session,
-                    **self.kwargs,
-                ),
-            )
-        elif self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
-            with BytesIO() as buffer:
-                wr.s3.download(
-                    path=value,
-                    boto3_session=boto3_session,
-                    local_file=buffer,
+        try:
+            boto3_session = kwargs.get("boto3_session")
+            if not boto3_session:
+                raise DeserializationError(
+                    message="AWS boto3 Session is required.",
+                    status_code=400,
+                    details={"format": str(self.format)},
                 )
-                json_data = json.loads(buffer.getvalue().decode())
-                return pd.json_normalize(json_data, **self.kwargs)
-        elif self.format == DatasetStorageFormatType.EXCEL:
-            return wr.s3.read_excel(
-                path=value,
-                boto3_session=boto3_session,
-                **self.kwargs,
-            )
-        elif self.format == DatasetStorageFormatType.XML:
-            with BytesIO() as buffer:
-                wr.s3.download(
+
+            if self.format == DatasetStorageFormatType.CSV:
+                return cast(
+                    "pd.DataFrame",
+                    wr.s3.read_csv(
+                        path=value,
+                        boto3_session=boto3_session,
+                        **self.kwargs,
+                    ),
+                )
+            elif self.format == DatasetStorageFormatType.PARQUET:
+                return cast(
+                    "pd.DataFrame",
+                    wr.s3.read_parquet(
+                        path=value,
+                        boto3_session=boto3_session,
+                        **self.kwargs,
+                    ),
+                )
+            elif self.format == DatasetStorageFormatType.JSON:
+                return cast(
+                    "pd.DataFrame",
+                    wr.s3.read_json(
+                        path=value,
+                        boto3_session=boto3_session,
+                        **self.kwargs,
+                    ),
+                )
+            elif self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
+                with BytesIO() as buffer:
+                    wr.s3.download(
+                        path=value,
+                        boto3_session=boto3_session,
+                        local_file=buffer,
+                    )
+                    json_data = json.loads(buffer.getvalue().decode())
+                    return pd.json_normalize(json_data, **self.kwargs)
+            elif self.format == DatasetStorageFormatType.EXCEL:
+                return wr.s3.read_excel(
                     path=value,
                     boto3_session=boto3_session,
-                    local_file=buffer,
+                    **self.kwargs,
                 )
-                return pd.read_xml(buffer, **self.kwargs)
-        else:
-            raise ValueError(f"Unsupported format: {self.format}")
+            elif self.format == DatasetStorageFormatType.XML:
+                with BytesIO() as buffer:
+                    wr.s3.download(
+                        path=value,
+                        boto3_session=boto3_session,
+                        local_file=buffer,
+                    )
+                    return pd.read_xml(buffer, **self.kwargs)
+            elif self.format == DatasetStorageFormatType.BINARY:
+                with BytesIO() as buffer:
+                    wr.s3.download(
+                        path=value,
+                        boto3_session=boto3_session,
+                        local_file=buffer,
+                    )
+                    return deserialize_binary(
+                        buffer,
+                        column=self.kwargs.get("column", "binary"),
+                        encoding=self.kwargs.get("encoding"),
+                    )
+            else:
+                raise DeserializationError(
+                    message=f"Unsupported format: {self.format}",
+                    details={"format": str(self.format)},
+                )
+        except DeserializationError:
+            raise
+        except Exception as exc:
+            raise DeserializationError(
+                message=f"Failed to deserialize {self.format} data: {exc}",
+                details={"format": str(self.format), "error": str(exc)},
+            ) from exc
