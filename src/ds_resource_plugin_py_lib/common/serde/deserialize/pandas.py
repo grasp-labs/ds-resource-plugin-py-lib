@@ -31,6 +31,7 @@ import pandas as pd
 from ds_common_serde_py_lib.errors import DeserializationError
 
 from ....common.resource.dataset.storage_format import DatasetStorageFormatType
+from ....libs.utils.json_default import json_default
 from ...serde.binary import deserialize_binary
 from ...serde.deserialize.base import DataDeserializer
 
@@ -76,7 +77,7 @@ class PandasDeserializer(DataDeserializer):
                 elif isinstance(value, str):
                     value = io.StringIO(value)
                 elif isinstance(value, (dict, list)):
-                    value = io.StringIO(json.dumps(value))
+                    value = io.StringIO(json.dumps(value, default=json_default))
 
             if self.format == DatasetStorageFormatType.SEMI_STRUCTURED_JSON:
                 if isinstance(value, io.BytesIO):
