@@ -179,3 +179,19 @@ class ListError(DatasetException):
         details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, code, status_code, details)
+
+
+class RowSchemaValidationError(DatasetException):
+    """Raised when ``self.output`` does not match the declared
+    ``TabularDataset.row_schema`` (a table/row data contract -- not to be
+    confused with the provider-facing JSON Schema used to validate a
+    dataset's construction payload before ``deserialize()``)."""
+
+    def __init__(
+        self,
+        message: str = "Output row schema does not match declared row schema",
+        code: str = "DS_DATASET_ROW_SCHEMA_VALIDATION_ERROR",
+        status_code: int = 422,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, code, status_code, details)

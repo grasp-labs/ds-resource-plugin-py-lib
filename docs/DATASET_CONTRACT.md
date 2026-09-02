@@ -40,6 +40,15 @@ must follow. These rules are universal -- no exceptions.
 
 ## Schema and Dataclass Alignment
 
+> **Not to be confused with:** `TabularDataset.row_schema` (a table/row
+> data contract describing column names and logical types, e.g.
+> `{"id": "int64", "name": "string"}`, validated against `self.output`
+> at runtime). This section is about the **provider-facing JSON Schema**
+> that validates a dataset's *construction payload* -- an entirely
+> different concept describing the shape of the `Dataset` object itself
+> (`id`/`name`/`version`/`settings`/...), not the shape of the data it
+> reads or writes.
+
 The provider-facing schema used to create a dataset instance (for
 example JSON validated before `Dataset.deserialize(...)`) must stay in
 sync with the dataset dataclass fields.
@@ -115,6 +124,67 @@ following field groups:
 - Nested settings fields
 - Inherited compatibility fields required by abstract/base classes that
   are intentionally internal and not user-exposed
+
+---
+
+## Row Schema (`self.row_schema`)
+
+`TabularDataset.row_schema` is an optional, portable table/row data
+contract -- **not** a JSON Schema (see **Schema and Dataclass Alignment**
+above for that, separate, concept). It declares the *data* shape a
+dataset produces or accepts, independent of `self.id`/`self.name`/
+`self.settings`, which describe the dataset resource itself.
+
+### Declaring it
+
+`row_schema` maps column name to a plain, engine-agnostic logical type
+name -- not a pandas/PyArrow implementation string:
+
+```python
+MyDataset(
+    ...,
+    row_schema={"id": "int64", "name": "string", "created_at": "timestamp"},
+)
+```
+
+Common type names: `int8`/`int16`/`int32`/`int64`,
+`uint8`/`uint16`/`uint32`/`uint64`, `float32`/`float64`, `bool`,
+`string`, `binary`, `date`, `time`, `timestamp`, `decimal`. This is a
+normalization, not an enforced enum -- other names are accepted as-is.
+
+### What gets validated, and how
+
+When `row_schema` is declared, `self.output` is checked against it after
+`read()`/`create()`/`update()`/`upsert()`/`delete()`:
+
+| Method | Match mode | Why |
+| ------ | ---------- | --- |
+| `read()` | Exact | No `self.output = self.input.copy()` fallback -- always the real result set. Every declared column must be present with the declared type; no undeclared columns. |
+| `create()` / `update()` / `upsert()` / `delete()` | Partial | May legitimately echo back `self.input`, which can omit columns the backend fills in itself (e.g. a server-assigned autoincrement `id`, or identity/changed-only columns). Present columns are still checked; declared columns that are absent are not an error. Undeclared columns present in the output are still flagged. |
+
+`list()`, `purge()`, and `rename()` are never checked -- `list()` returns
+resource-discovery metadata (not dataset rows), and the other two do not
+populate `self.output`.
+
+**No-op exemption.** `create()`/`update()`/`upsert()`/`delete()` are
+contract-guaranteed no-ops on empty `self.input` (see **Input Handling**
+below). `self.output` is not required to be reset on a no-op and may
+still hold a previous call's data -- row schema validation is skipped
+entirely in that case, rather than validating stale output.
+
+Mismatches raise `RowSchemaValidationError` (a `DatasetException`
+subclass), with `details` reporting normalized type names on both sides.
+
+### Providers never write PyArrow strings
+
+Internally, both the declared `row_schema` and the actual PyArrow-backend
+dtypes pandas produces (`self.operation.schema`, via
+`convert_dtypes(dtype_backend="pyarrow")`) are normalized to the same
+portable vocabulary before comparison. A declared `"int64"` matches
+pandas' raw `"int64[pyarrow]"` -- callers never need to know which
+DataFrame backend produced the data. `self.operation.schema` itself
+stays the raw, unnormalized diagnostic value; it is a separate,
+general-purpose field, not specific to row schema validation.
 
 ## Input Handling
 

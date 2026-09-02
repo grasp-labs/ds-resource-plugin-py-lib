@@ -31,7 +31,25 @@ def track_result(fn: Callable[..., Any]) -> Callable[..., Any]:
     - ``started_at`` / ``ended_at`` / ``duration_ms`` -- wall-clock timing.
     - ``row_count`` -- derived from ``len(self.output)`` when the
       provider leaves the default (``0``).
-    - ``schema`` -- derived via PyArrow dtype inference on ``self.output``.
+    - ``schema`` -- derived via PyArrow dtype inference on ``self.output``
+      (``self.output.convert_dtypes(dtype_backend="pyarrow")``), unless the
+      provider already set ``self.operation.schema`` explicitly.
+
+    On data-producing methods (see ``DatasetMethod.row_schema_validated_values``),
+    if the dataset declares ``self.row_schema`` (portable, engine-agnostic
+    ``dict[str, str]`` table/row contract -- see ``TabularDataset.row_schema``;
+    distinct from any JSON Schema), ``self.output`` is validated against it
+    via ``self._validate_output_row_schema()``. That check runs *after* the
+    ``schema`` auto-derivation above and reuses ``self.operation.schema``
+    rather than re-running the PyArrow conversion -- do not reorder these
+    two blocks. Both sides are normalized via
+    ``dataset.dtype.normalize_row_schema`` before comparison, so a declared
+    ``"int64"`` matches pandas' raw ``"int64[pyarrow]"``. If a provider
+    explicitly overrides ``self.operation.schema`` with a custom value,
+    row schema validation compares against that overridden value rather
+    than the true output dtypes. Mismatches raise
+    ``RowSchemaValidationError``, which is captured the same way as any
+    other exception below.
 
     Providers may override any of these by assigning to ``self.operation``
     inside their method body.
@@ -53,6 +71,13 @@ def track_result(fn: Callable[..., Any]) -> Callable[..., Any]:
             if self.operation.schema is None and hasattr(self.output, "convert_dtypes"):
                 converted = self.output.convert_dtypes(dtype_backend="pyarrow")
                 self.operation.schema = {str(col): str(dtype) for col, dtype in converted.dtypes.to_dict().items()}
+
+            if (
+                getattr(self, "row_schema", None) is not None
+                and hasattr(self, "_validate_output_row_schema")
+                and fn.__name__ in DatasetMethod.row_schema_validated_values()
+            ):
+                self._validate_output_row_schema()
 
         except Exception as exc:
             self.operation.success = False

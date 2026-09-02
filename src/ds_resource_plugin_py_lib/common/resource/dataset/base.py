@@ -22,7 +22,9 @@ from ...resource.linked_service.base import LinkedService
 from ...serde.deserialize.base import DataDeserializer
 from ...serde.serialize.base import DataSerializer
 from .decorators import track_result
+from .dtype import normalize_row_schema
 from .enums import DatasetMethod
+from .errors import RowSchemaValidationError
 from .result import OperationInfo
 
 
@@ -320,3 +322,144 @@ class TabularDataset(
 
     input: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
     output: pd.DataFrame = field(default_factory=pd.DataFrame, metadata={"serialize": False})
+
+    row_schema: dict[str, str] | None = None
+    """
+    Declared column name -> portable, engine-agnostic logical type name
+    (e.g. ``{"id": "int64", "name": "string", "created_at": "timestamp"}``).
+
+    This is a table/row data contract -- **not** a JSON Schema, and not a
+    place to write pandas/PyArrow implementation details. Do not confuse
+    this with the provider-facing JSON Schema used to validate a dataset's
+    *construction payload* before ``deserialize()`` (see
+    ``DATASET_CONTRACT.md`` -- "Schema and Dataclass Alignment"); that
+    schema describes the shape of this ``Dataset`` object itself
+    (``id``/``name``/``version``/``settings``/...), while ``row_schema``
+    describes the shape of the *data* flowing through ``self.output``.
+
+    Write plain logical type names, not
+    ``convert_dtypes(dtype_backend="pyarrow")`` output like
+    ``"int64[pyarrow]"``. Common names: ``int8``/``int16``/``int32``/
+    ``int64``, ``uint8``/``uint16``/``uint32``/``uint64``,
+    ``float32``/``float64``, ``bool``, ``string``, ``binary``, ``date``,
+    ``time``, ``timestamp``, ``decimal``. This is a normalization, not an
+    enforced enum -- other names are accepted as-is (lowercased); see
+    ``dataset.dtype.normalize_dtype`` for the exact rules.
+
+    Optional. When set, ``self.output`` is validated against it after
+    ``read``/``create``/``update``/``upsert``/``delete`` (see
+    ``DatasetMethod.row_schema_validated_values``) -- exactly for
+    ``read()``, as a subset for ``create()``/``update()``/``upsert()``/
+    ``delete()`` (see ``_validate_output_row_schema`` for the full rules),
+    and skipped entirely on a contract-guaranteed no-op (empty
+    ``self.input`` on a write method).
+
+    Internally, both this declared row schema and the PyArrow-backend
+    dtypes pandas actually produces (``self.operation.schema``, via
+    ``convert_dtypes(dtype_backend="pyarrow")``) are normalized to the same
+    portable vocabulary via ``dataset.dtype.normalize_row_schema`` before
+    being compared -- callers never need to know which DataFrame backend
+    produced the data. ``self.operation.schema`` itself is left untouched
+    (still the raw PyArrow-backend string) since it is a separate,
+    general-purpose diagnostic field, not specific to row schema
+    validation.
+    """
+
+    def _has_empty_input(self) -> bool:
+        """True when ``self.input`` is ``None`` or empty, per the
+        ``DATASET_CONTRACT.md`` "Empty input" no-op rule."""
+        return self.input is None or (hasattr(self.input, "__len__") and len(self.input) == 0)
+
+    def _validate_output_row_schema(self) -> None:
+        """
+        Validate ``self.output`` against the declared ``self.row_schema``.
+
+        Reuses ``self.operation.schema`` -- already computed by
+        ``track_result`` via the same ``convert_dtypes(dtype_backend="pyarrow")``
+        call -- instead of re-running that (non-trivial, data-copying)
+        conversion a second time. This relies on ``track_result`` populating
+        ``self.operation.schema`` before invoking this method. Both
+        ``self.row_schema`` and ``self.operation.schema`` are normalized via
+        ``dataset.dtype.normalize_row_schema`` before comparison, so declared
+        logical type names (``"int64"``) and pandas' raw PyArrow-backend
+        strings (``"int64[pyarrow]"``) compare equal.
+
+        **Skipped entirely** when:
+
+        - ``self.row_schema`` is not declared.
+        - The current method is input-dependent (``create``/``update``/
+          ``upsert``/``delete``, see ``DatasetMethod.input_dependent_values``)
+          and ``self.input`` is empty. This is a contract-guaranteed no-op
+          (``DATASET_CONTRACT.md`` -- "Empty input"); the provider is not
+          required to reset ``self.output`` on a no-op, so it may still hold
+          a previous call's data (e.g. a prior ``list()``/``read()``).
+          Validating stale output here would reject a call the contract
+          guarantees can never fail.
+        - ``self.output`` has no rows -- an empty result carries no reliable
+          column/dtype information to compare (a default, uninitialised
+          DataFrame has no columns at all).
+        - ``self.operation.schema`` is unavailable (``self.output`` does not
+          expose ``convert_dtypes``, e.g. not a DataFrame).
+
+        **Match mode** depends on the method (see
+        ``DatasetMethod.full_row_schema_match_values`` /
+        ``DatasetMethod.partial_row_schema_match_values``):
+
+        - ``read()`` -- exact match. ``self.output`` must contain every
+          declared column with the declared type, and no undeclared
+          columns. ``read()`` is the only row-schema-validated method with
+          no ``self.output = self.input.copy()`` fallback, so its output is
+          always the real backend result set.
+        - ``create()`` / ``update()`` / ``upsert()`` / ``delete()`` --
+          partial match. ``self.output`` may legitimately carry only a
+          subset of ``self.row_schema`` (e.g. a server-assigned
+          autoincrement ``id`` the caller never supplied to ``create()``,
+          or identity/changed columns for ``update()``/``upsert()``/
+          ``delete()``), per the ``self.output = self.input.copy()``
+          fallback in ``DATASET_CONTRACT.md`` for backends with no
+          ``RETURNING``-style response. Columns that *are* present are
+          still checked against ``self.row_schema``; declared columns that
+          are absent are not an error. Columns present but not declared in
+          ``self.row_schema`` are still flagged.
+
+        Raises:
+            RowSchemaValidationError: If ``self.output`` does not match
+                ``self.row_schema`` under the applicable match mode.
+                ``details`` report normalized (portable) type names on both
+                sides.
+        """
+        if self.row_schema is None:
+            return
+
+        method = self.operation.method
+        if method in DatasetMethod.input_dependent_values() and self._has_empty_input():
+            return
+
+        if not hasattr(self.output, "__len__") or len(self.output) == 0:
+            return
+
+        raw_actual = self.operation.schema
+        if raw_actual is None:
+            return
+
+        expected = normalize_row_schema(self.row_schema)
+        actual = normalize_row_schema(raw_actual)
+
+        if method in DatasetMethod.partial_row_schema_match_values():
+            mismatched = {col: dtype for col, dtype in actual.items() if col in expected and expected[col] != dtype}
+            unknown = {col: dtype for col, dtype in actual.items() if col not in expected}
+            if mismatched or unknown:
+                raise RowSchemaValidationError(
+                    details={
+                        "expected": expected,
+                        "actual": actual,
+                        "mismatched": mismatched,
+                        "unknown": unknown,
+                    },
+                )
+            return
+
+        if actual != expected:
+            raise RowSchemaValidationError(
+                details={"expected": expected, "actual": actual},
+            )
