@@ -204,6 +204,9 @@ class TestInstanceCreation:
             client.linked_service(config)
 
         assert "Error deserializing linked service" in str(exc_info.value.message)
+        assert "config" not in exc_info.value.details
+        assert exc_info.value.details["type"] == config["type"]
+        assert exc_info.value.details["version"] == config["version"]
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
@@ -248,3 +251,6 @@ class TestInstanceCreation:
             client.dataset(config)
 
         assert "Error deserializing dataset" in str(exc_info.value.message)
+        assert "config" not in exc_info.value.details
+        assert exc_info.value.details["type"] == config["type"]
+        assert exc_info.value.details["version"] == config["version"]

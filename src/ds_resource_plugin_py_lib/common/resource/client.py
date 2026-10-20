@@ -44,6 +44,15 @@ from ..resource.linked_service.base import LinkedService, LinkedServiceInfo
 logger = Logger.get_logger(__name__, package=True)
 
 
+def _deserialization_details(config: dict[str, Any], error: Exception) -> dict[str, Any]:
+    """Return safe diagnostics for a failed resource deserialization."""
+    return {
+        "type": config.get("type"),
+        "version": config.get("version"),
+        "error": str(error),
+    }
+
+
 class ResourceClient:
     PROTOCOL_GROUP = "ds.protocols"
     PROVIDER_GROUP = "ds.providers"
@@ -237,7 +246,7 @@ class ResourceClient:
             logger.error(f"Error deserializing linked service: {exc}")
             raise DeserializationError(
                 message=f"Error deserializing linked service: {exc}",
-                details={"config": config, "error": str(exc)},
+                details=_deserialization_details(config, exc),
             ) from exc
 
     def dataset(self, config: dict[str, Any]) -> Dataset[Any, Any, Any, Any]:
@@ -261,5 +270,5 @@ class ResourceClient:
             logger.error(f"Error deserializing dataset: {exc}")
             raise DeserializationError(
                 message=f"Error deserializing dataset: {exc}",
-                details={"config": config, "error": str(exc)},
+                details=_deserialization_details(config, exc),
             ) from exc
