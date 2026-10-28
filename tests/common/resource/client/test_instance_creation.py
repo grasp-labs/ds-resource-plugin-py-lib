@@ -156,6 +156,95 @@ class TestInstanceCreation:
         assert deserialized_config["linked_service"] is mock_linked_service_class.deserialize.return_value
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_dataset_creation_preserves_existing_linked_service_object(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_dataset_class,
+        mock_linked_service_class,
+    ):
+        """Do not re-resolve linked services that are already deserialized objects."""
+        ep = Mock(name="graphql_entry_point")
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.return_value = mock_dataset_class
+        client = ResourceClient()
+        linked_service = mock_linked_service_class.deserialize.return_value
+        config = {
+            "type": "DS.RESOURCE.DATASET.GRAPHQL",
+            "version": "1.0.0",
+            "settings": {"query": "query { users { id } }"},
+            "linked_service": linked_service,
+        }
+
+        client.dataset(config)
+
+        mock_linked_service_class.deserialize.assert_not_called()
+        deserialized_config = mock_dataset_class.deserialize.call_args.args[0]
+        assert deserialized_config["linked_service"] is linked_service
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_dataset_creation_does_not_mutate_nested_linked_service_config(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_dataset_class,
+        mock_linked_service_class,
+    ):
+        """Resolve nested linked services without changing the caller's config."""
+        ep = Mock(name="graphql_entry_point")
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.side_effect = [mock_dataset_class, mock_linked_service_class]
+        client = ResourceClient()
+        linked_service_config = {
+            "type": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
+            "version": "1.0.0",
+            "settings": {"url": "https://example.com/graphql"},
+        }
+        config = {
+            "type": "DS.RESOURCE.DATASET.GRAPHQL",
+            "version": "1.0.0",
+            "settings": {"query": "query { users { id } }"},
+            "linked_service": linked_service_config,
+        }
+
+        client.dataset(config)
+
+        assert config["linked_service"] is linked_service_config
+        assert config["linked_service"]["settings"]["url"] == "https://example.com/graphql"
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     def test_linked_service_missing_type(self, mock_entry_points):
         """Test error handling when type is missing."""
         # Setup
