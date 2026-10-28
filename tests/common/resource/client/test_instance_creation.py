@@ -108,6 +108,54 @@ class TestInstanceCreation:
         mock_dataset_class.deserialize.assert_called_once_with(config)
 
     @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_module")
+    @patch("ds_resource_plugin_py_lib.common.resource.client.import_string")
+    def test_dataset_creation_deserializes_nested_linked_service(
+        self,
+        mock_import_string,
+        mock_import_module,
+        mock_entry_points,
+        temp_dir,
+        graphql_resource_yaml,
+        mock_dataset_class,
+        mock_linked_service_class,
+    ):
+        """Resolve a dataset's provider linked service before dataset deserialization."""
+        ep = Mock(name="graphql_entry_point")
+        ep.name = "graphql"
+        ep.module = "ds_protocol_graphql_py_lib"
+        mock_entry_points.return_value = [ep]
+
+        module = Mock()
+        module.__file__ = str(temp_dir / "__init__.py")
+        mock_import_module.return_value = module
+
+        resource_file = temp_dir / "resource.yaml"
+        with resource_file.open("w") as f:
+            yaml.dump(graphql_resource_yaml, f)
+
+        mock_import_string.side_effect = [mock_dataset_class, mock_linked_service_class]
+        client = ResourceClient()
+        config = {
+            "type": "DS.RESOURCE.DATASET.GRAPHQL",
+            "version": "1.0.0",
+            "settings": {"query": "query { users { id } }"},
+            "linked_service": {
+                "type": "DS.RESOURCE.LINKED_SERVICE.GRAPHQL",
+                "version": "1.0.0",
+                "settings": {"url": "https://example.com/graphql"},
+            },
+        }
+
+        dataset = client.dataset(config)
+
+        assert dataset is not None
+        mock_linked_service_class.deserialize.assert_called_once_with(config["linked_service"])
+        mock_dataset_class.deserialize.assert_called_once()
+        deserialized_config = mock_dataset_class.deserialize.call_args.args[0]
+        assert deserialized_config["linked_service"] is mock_linked_service_class.deserialize.return_value
+
+    @patch("ds_resource_plugin_py_lib.common.resource.client.entry_points")
     def test_linked_service_missing_type(self, mock_entry_points):
         """Test error handling when type is missing."""
         # Setup
