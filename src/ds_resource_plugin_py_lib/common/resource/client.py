@@ -159,7 +159,7 @@ class ResourceClient:
         Args:
             config: Resource configuration dictionary.
         """
-        linked_services = config.get("linked_service", [])
+        linked_services = config.get("linked_service", []) + config.get("linked-service", [])
         for service in linked_services:
             service_name = service.get("name")
             if service_name:
