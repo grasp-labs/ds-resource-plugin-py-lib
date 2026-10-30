@@ -159,7 +159,7 @@ class ResourceClient:
         Args:
             config: Resource configuration dictionary.
         """
-        linked_services = config.get("linked_service", [])
+        linked_services = config.get("linked_service", []) + config.get("linked-service", [])
         for service in linked_services:
             service_name = service.get("name")
             if service_name:
@@ -264,6 +264,12 @@ class ResourceClient:
             type = config["type"]
             version = sanitize_version(config["version"])
             dataset_cls = self._get_dataset_model_cls(type, version)
+            linked_service_config = config.get("linked_service")
+            if isinstance(linked_service_config, dict):
+                config = {
+                    **config,
+                    "linked_service": self.linked_service(linked_service_config),
+                }
             dataset: Dataset[Any, Any, Any, Any] = dataset_cls.deserialize(config)
             return dataset
         except (TypeError, KeyError) as exc:
